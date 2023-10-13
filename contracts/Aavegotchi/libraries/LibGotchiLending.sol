@@ -12,6 +12,8 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import {IRealmDiamond} from "../../shared/interfaces/IRealmDiamond.sol";
 
 import {LibMeta} from "../../shared/libraries/LibMeta.sol";
+import {IERC7432} from "../../shared/interfaces/IERC7432.sol";
+
 
 library LibEventStructContainers {
     struct GotchiLendingAdd {
@@ -503,10 +505,20 @@ library LibGotchiLending {
 
     function isAavegotchiLent(uint32 _tokenId) internal view returns (bool) {
         AppStorage storage s = LibAppStorage.diamondStorage();
-        if (!isAavegotchiListed(_tokenId)) return false;
-        uint32 listingId = s.aavegotchiToListingId[_tokenId];
-        GotchiLending storage listing_ = s.gotchiLendings[listingId];
-        return (listing_.timeAgreed != 0 && !listing_.completed);
+        address _lastGrantee = IERC7432(s.rolesRegistry).lastGrantee(
+            keccak256("USER_ROLE"),
+            address(this),
+            _tokenId,
+            address(0)
+        );
+
+        return IERC7432(s.rolesRegistry).hasRole(
+            keccak256("USER_ROLE"),
+            address(this),
+            _tokenId,
+            address(0),
+            _lastGrantee
+        );
     }
 
     function checkPeriod(uint32 _period) internal pure returns (bool) {
