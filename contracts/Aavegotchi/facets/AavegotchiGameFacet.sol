@@ -13,7 +13,7 @@ import {CollateralEscrow} from "../CollateralEscrow.sol";
 import {LibMeta} from "../../shared/libraries/LibMeta.sol";
 import {LibERC721Marketplace} from "../libraries/LibERC721Marketplace.sol";
 
-import {LibGotchiLending} from "../libraries/LibGotchiLending.sol";
+import {LibGotchiRoles} from "../libraries/LibGotchiRoles.sol";
 
 import {LibBitmapHelpers} from "../libraries/LibBitmapHelpers.sol";
 
@@ -336,7 +336,7 @@ contract AavegotchiGameFacet is Modifiers {
         require(msg.sender == s.realmAddress, "GotchiLending: Only Realm can reduce kinship via channeling");
         //no need to do checks on _gotchiId since realmDiamond handles that
         //first check if aavegotchi is lent
-        if (LibGotchiLending.isAavegotchiLent(_gotchiId)) {
+        if (LibGotchiRoles.isAavegotchiLent(_gotchiId)) {
             //short-circuit here
             uint32 listingId = s.aavegotchiToListingId[_gotchiId];
             if (LibBitmapHelpers.getValueInByte(0, s.gotchiLendings[listingId].permissions) == 0) {

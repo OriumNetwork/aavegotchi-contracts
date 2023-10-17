@@ -8,9 +8,9 @@ import {LibERC20} from "../../shared/libraries/LibERC20.sol";
 import {IERC20} from "../../shared/interfaces/IERC20.sol";
 import {IERC721} from "../../shared/interfaces/IERC721.sol";
 import {LibMeta} from "../../shared/libraries/LibMeta.sol";
-import {LibGotchiLending} from "../libraries/LibGotchiLending.sol";
 import {Modifiers, ERC721BuyOrder} from "../libraries/LibAppStorage.sol";
 import {BaazaarSplit, LibSharedMarketplace, SplitAddresses} from "../libraries/LibSharedMarketplace.sol";
+import {LibGotchiRoles} from "../libraries/LibGotchiRoles.sol";
 
 contract ERC721BuyOrderFacet is Modifiers {
     event ERC721BuyOrderAdded(
@@ -207,7 +207,7 @@ contract ERC721BuyOrderFacet is Modifiers {
             // disable for gotchi in lending
             uint256 category = LibSharedMarketplace.getERC721Category(_erc721TokenAddress, _erc721TokenId);
             if (category == LibAavegotchi.STATUS_AAVEGOTCHI) {
-                require(!LibGotchiLending.isAavegotchiLent(uint32(_erc721TokenId)), "ERC721BuyOrder: Not supported for aavegotchi in lending");
+                require(!LibGotchiRoles.isAavegotchiLent(uint32(_erc721TokenId)), "ERC721BuyOrder: Not supported for aavegotchi in lending");
             }
         }
 
