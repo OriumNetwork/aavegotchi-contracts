@@ -280,19 +280,12 @@ contract AavegotchiGameFacet is Modifiers {
             //If the owner is the bridge or GBM Contract, anyone can pet the gotchis inside
             if (owner != address(this) && owner != 0xD5543237C656f25EEA69f1E247b8Fa59ba353306) {
                 // Check lending status of aavegotchi and allow original pet operators
-                bool isOriginalPetOperator;
-                uint32 listingId = s.aavegotchiToListingId[uint32(tokenId)];
-                if ((listingId != 0) && (s.gotchiLendings[listingId].timeAgreed > 0)) {
-                    address lender = s.gotchiLendings[listingId].lender;
-                    isOriginalPetOperator = s.operators[lender][sender] || s.petOperators[lender][sender];
-                }
                 require(
                     sender == owner ||
                         s.operators[owner][sender] ||
                         s.approved[tokenId] == sender ||
                         s.petOperators[owner][sender] ||
-                        LibGotchiRoles.hasGotchiversePlayerRole(uint32(tokenId), sender) ||
-                        isOriginalPetOperator,
+                        LibGotchiRoles.hasGotchiversePlayerRole(uint32(tokenId), sender),
                     "AavegotchiGameFacet: Not owner of token or approved"
                 );
             }
