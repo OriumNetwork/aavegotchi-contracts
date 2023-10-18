@@ -291,6 +291,7 @@ contract AavegotchiGameFacet is Modifiers {
                         s.operators[owner][sender] ||
                         s.approved[tokenId] == sender ||
                         s.petOperators[owner][sender] ||
+                        LibGotchiRoles.hasGotchiversePlayerRole(uint32(tokenId), sender) ||
                         isOriginalPetOperator,
                     "AavegotchiGameFacet: Not owner of token or approved"
                 );
@@ -337,16 +338,10 @@ contract AavegotchiGameFacet is Modifiers {
         //no need to do checks on _gotchiId since realmDiamond handles that
         //first check if aavegotchi is lent
         if (LibGotchiRoles.isAavegotchiLent(_gotchiId)) {
-            //short-circuit here
-            uint32 listingId = s.aavegotchiToListingId[_gotchiId];
-            if (LibBitmapHelpers.getValueInByte(0, s.gotchiLendings[listingId].permissions) == 0) {
-                revert("This listing has no permissions set");
-            }
 
-            //check if channelling is allowed for the listing
-            //check that the modifier is at least 1
+            //check if channelling is allowed for the borrower
             //more checks can be introduced if more modifiers are added
-            if (LibBitmapHelpers.getValueInByte(0, s.gotchiLendings[listingId].permissions) > 0) {
+            if (LibGotchiRoles.rentalHasChannelingPermission(_gotchiId)) {
                 //more checks can be introduced here as different permissions are added
                 LibAavegotchi._reduceAavegotchiKinship(_gotchiId, 2);
             } else {

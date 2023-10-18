@@ -203,14 +203,6 @@ contract ERC721BuyOrderFacet is Modifiers {
             require(erc721BuyOrder.timeCreated + erc721BuyOrder.duration >= block.timestamp, "ERC721BuyOrder: Already expired");
         }
 
-        if (erc721BuyOrder.erc721TokenAddress == address(this)) {
-            // disable for gotchi in lending
-            uint256 category = LibSharedMarketplace.getERC721Category(_erc721TokenAddress, _erc721TokenId);
-            if (category == LibAavegotchi.STATUS_AAVEGOTCHI) {
-                require(!LibGotchiRoles.isAavegotchiLent(uint32(_erc721TokenId)), "ERC721BuyOrder: Not supported for aavegotchi in lending");
-            }
-        }
-
         // hash validation
         require(
             erc721BuyOrder.validationHash ==

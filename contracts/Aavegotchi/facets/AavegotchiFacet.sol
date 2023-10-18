@@ -204,7 +204,6 @@ contract AavegotchiFacet is Modifiers {
 
     // This function is used by transfer functions
     function internalTransferFrom(address _sender, address _from, address _to, uint256 _tokenId) internal {
-        LibGotchiRoles.isAavegotchiLent(uint32(_tokenId));
         _enforceAavegotchiNotForging(_tokenId);
 
         require(_to != address(0), "AavegotchiFacet: Can't transfer to 0 address");
