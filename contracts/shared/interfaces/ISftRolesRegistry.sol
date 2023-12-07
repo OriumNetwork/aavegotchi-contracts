@@ -84,9 +84,21 @@ interface ISftRolesRegistry is IERC165 {
     /// @param _isApproved The approval status.
     event RoleApprovalForAll(address indexed _tokenAddress, address indexed _operator, bool _isApproved);
 
+    /// @notice Emitted when a user deposits tokens to grant roles.
+    /// @param _nonce The identifier of the role assignment.
+    /// @param _tokenAddress The token address.
+    /// @param _tokenId The token identifier.
+    /// @param _tokenAmount The token amount deposited.
+    /// @param _grantor The user depositing the tokens.
     event Deposited(uint256 indexed _nonce, address indexed _tokenAddress, uint256 indexed _tokenId, uint256 _tokenAmount, address _grantor);
-
-    event Withdrew(uint256 indexed _nonce, address indexed _tokenAddress, uint256 indexed _tokenId, uint256 _tokenAmount);
+    
+    /// @notice Emitted when a user withdraws tokens from a role assignment.
+    /// @param _nonce The identifier of the role assignment.
+    /// @param _grantor The user withdrawing the tokens.
+    /// @param _tokenAddress The token address.
+    /// @param _tokenId The token identifier.
+    /// @param _tokenAmount The token amount withdrawn.
+    event Withdrew(uint256 indexed _nonce, address indexed _grantor,  uint256 indexed _tokenId, address _tokenAddress, uint256 _tokenAmount);
 
     /** External Functions **/
 
