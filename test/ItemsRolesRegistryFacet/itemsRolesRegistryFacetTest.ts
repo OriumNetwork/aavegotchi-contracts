@@ -278,7 +278,7 @@ describe("ItemsRolesRegistryFacet", async () => {
     });
   });
 
-  describe("grantorole", async () => {
+  describe("revokeRole", async () => {
     let RoleAssignment: RoleAssignment;
 
     beforeEach(async () => {
