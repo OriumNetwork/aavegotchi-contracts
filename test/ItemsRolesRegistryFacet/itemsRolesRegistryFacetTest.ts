@@ -371,15 +371,6 @@ describe("ItemsRolesRegistryFacet", async () => {
           RoleAssignment.grantor,
           RoleAssignment.grantee
         );
-      // transfer tokens back to owner
-      /*  .to.emit(wearablesFacet, 'TransferSingle')
-        .withArgs(
-          ItemsRolesRegistryFacet.address,
-          ItemsRolesRegistryFacet.address,
-          RoleAssignment.grantor,
-          RoleAssignment.tokenId,
-          RoleAssignment.tokenAmount,
-        ) */
     });
 
     it("should revoke role if sender is approved by grantor", async () => {
@@ -404,15 +395,6 @@ describe("ItemsRolesRegistryFacet", async () => {
           RoleAssignment.grantor,
           RoleAssignment.grantee
         );
-      // transfer tokens back to owner
-      /* .to.emit(wearablesFacet, 'TransferSingle')
-        .withArgs(
-          ItemsRolesRegistryFacet.address,
-          ItemsRolesRegistryFacet.address,
-          RoleAssignment.grantor,
-          RoleAssignment.tokenId,
-          RoleAssignment.tokenAmount,
-        ) */
     });
     it("should revoke role if sender is approved by grantee", async () => {
       await ItemsRolesRegistryFacet.connect(grantee).setRoleApprovalForAll(
@@ -436,15 +418,6 @@ describe("ItemsRolesRegistryFacet", async () => {
           RoleAssignment.grantor,
           RoleAssignment.grantee
         );
-      // transfer tokens back to owner
-      /*         .to.emit(wearablesFacet, 'TransferSingle')
-        .withArgs(
-          ItemsRolesRegistryFacet.address,
-          ItemsRolesRegistryFacet.address,
-          RoleAssignment.grantor,
-          RoleAssignment.tokenId,
-          RoleAssignment.tokenAmount,
-        ) */
     });
 
     it("should revoke role if sender is grantee", async () => {
@@ -474,15 +447,6 @@ describe("ItemsRolesRegistryFacet", async () => {
           newRoleAssignment.grantor,
           newRoleAssignment.grantee
         );
-      // transfer tokens back to owner
-      /*         .to.emit(wearablesFacet, 'TransferSingle')
-        .withArgs(
-          ItemsRolesRegistryFacet.address,
-          ItemsRolesRegistryFacet.address,
-          RoleAssignment.grantor,
-          RoleAssignment.tokenId,
-          RoleAssignment.tokenAmount,
-        ) */
     });
   });
 

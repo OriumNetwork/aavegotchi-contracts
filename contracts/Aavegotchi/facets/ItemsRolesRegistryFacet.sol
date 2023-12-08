@@ -9,7 +9,7 @@ import {LibItems} from "../libraries/LibItems.sol";
 import {LibMeta} from "../../shared/libraries/LibMeta.sol";
 import {LibERC1155Marketplace} from "../libraries/LibERC1155Marketplace.sol";
 
-import {Modifiers, ItemType} from "../libraries/LibAppStorage.sol";
+import {Modifiers, ItemType, EQUIPPED_WEARABLE_SLOTS} from "../libraries/LibAppStorage.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {ERC1155Holder, ERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import {IEventHandlerFacet} from "../WearableDiamond/interfaces/IEventHandlerFacet.sol";
@@ -73,18 +73,18 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
         _grantOrUpdateRole(_grantRoleData.nonce, _depositInfo, _roleData);
     }
 
-    function _grantOrUpdateRole(uint256 _nonce, DepositInfo memory _depositInfo, RoleData memory _roleData) internal {
+    function _grantOrUpdateRole(uint256 _depositId, DepositInfo memory _depositInfo, RoleData memory _roleData) internal {
         // validate if previous role assignment is expired or revocable
-        RoleData memory _previousRoleData = s.itemsRoleAssignments[_nonce];
+        RoleData memory _previousRoleData = s.itemsRoleAssignments[_depositId];
         require(
             _previousRoleData.expirationDate < block.timestamp || _previousRoleData.revocable,
             "ItemsRolesRegistryFacet: nonce is not expired or is not revocable"
         );
 
-        s.itemsRoleAssignments[_nonce] = _roleData;
+        s.itemsRoleAssignments[_depositId] = _roleData;
 
         emit RoleGranted(
-            _nonce,
+            _depositId,
             EQUIP_WEARABLE_ROLE,
             _depositInfo.tokenAddress,
             _depositInfo.tokenId,
@@ -97,22 +97,22 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
         );
     }
 
-    function _deposit(uint256 _nonce, DepositInfo memory _depositInfo) internal {
+    function _deposit(uint256 _depositId, DepositInfo memory _depositInfo) internal {
         require(_depositInfo.tokenAmount > 0, "ItemsRolesRegistryFacet: tokenAmount must be greater than zero");
-        require(s.itemsDeposits[_nonce].grantor == address(0), "ItemsRolesRegistryFacet: deposit already exists");
+        require(s.itemsDeposits[_depositId].grantor == address(0), "ItemsRolesRegistryFacet: deposit already exists");
 
-        s.itemsDeposits[_nonce] = _depositInfo;
+        s.itemsDeposits[_depositId] = _depositInfo;
 
-        emit Deposited(_nonce, _depositInfo.tokenAddress, _depositInfo.tokenId, _depositInfo.tokenAmount, _depositInfo.grantor);
+        emit Deposited(_depositId, _depositInfo.tokenAddress, _depositInfo.tokenId, _depositInfo.tokenAmount, _depositInfo.grantor);
 
         _transferFrom(_depositInfo.grantor, address(this), _depositInfo.tokenAddress, _depositInfo.tokenId, _depositInfo.tokenAmount);
     }
 
-    function revokeRoleFrom(uint256 _nonce, bytes32 _role) external override {
+    function revokeRoleFrom(uint256 _depositId, bytes32 _role) external override {
         // revoke(depositId, role1)
-        RoleData memory _roleData = s.itemsRoleAssignments[_nonce];
+        RoleData memory _roleData = s.itemsRoleAssignments[_depositId];
         require(_roleData.grantee != address(0), "ItemsRolesRegistryFacet: invalid grantee");
-        DepositInfo memory _depositInfo = s.itemsDeposits[_nonce];
+        DepositInfo memory _depositInfo = s.itemsDeposits[_depositId];
 
         address caller = _findCaller(_roleData, _depositInfo);
         if (_roleData.expirationDate > block.timestamp && !_roleData.revocable) {
@@ -120,18 +120,19 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
             require(caller == _roleData.grantee, "ItemsRolesRegistryFacet: nonce is not expired or is not revocable");
         }
 
-        if (s.itemIdToDelegationIdToGotchiId[_nonce][_depositInfo.tokenId] != 0) {
-            uint256 _gotchiId = s.itemIdToDelegationIdToGotchiId[_nonce][_depositInfo.tokenId];
-            LibItems.removeFromParent(address(this), _gotchiId, _depositInfo.tokenId, 1);
-            IEventHandlerFacet(s.wearableDiamond).emitTransferSingleEvent(msg.sender, address(this), msg.sender, _depositInfo.tokenId, 1);
-            emit LibERC1155.TransferFromParent(address(this), _gotchiId, _depositInfo.tokenId, 1);
-            delete s.itemIdToDelegationIdToGotchiId[_nonce][_depositInfo.tokenId];
+        if (s.depositIdToItemIdToGotchiId[_depositId][_depositInfo.tokenId] != 0) {
+            uint256 _gotchiId = s.depositIdToItemIdToGotchiId[_depositId][_depositInfo.tokenId];
+
+            _unequipWearable(_gotchiId, _depositInfo.tokenId);
+
+            delete s.depositIdToItemIdToGotchiId[_depositId][_depositInfo.tokenId];
+            delete s.gotchiIdToItemIdToDepositId[_gotchiId][_depositInfo.tokenId];
         }
 
-        delete s.itemsRoleAssignments[_nonce];
+        delete s.itemsRoleAssignments[_depositId];
 
         emit RoleRevoked(
-            _nonce,
+            _depositId,
             _roleData.role,
             _depositInfo.tokenAddress,
             _depositInfo.tokenId,
@@ -141,31 +142,41 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
         );
     }
 
+    function _unequipWearable(uint256 _gotchiId, uint256 _wearableToUnequip) internal {
+        for (uint256 slot; slot < EQUIPPED_WEARABLE_SLOTS; slot++) {
+            if(s.aavegotchis[_gotchiId].equippedWearables[slot] != _wearableToUnequip) continue;
+            s.aavegotchis[_gotchiId].equippedWearables[slot] = 0;
+        }
+
+        LibItems.removeFromParent(address(this), _gotchiId, _wearableToUnequip, 1);
+        emit LibERC1155.TransferFromParent(address(this), _gotchiId, _wearableToUnequip, 1);
+    }
+
     function withdraw(
-        uint256 _nonce
+        uint256 _depositId
     )
         public
         onlyOwnerOrApprovedWithBalance(
-            s.itemsDeposits[_nonce].grantor,
-            s.itemsDeposits[_nonce].tokenAddress,
-            s.itemsDeposits[_nonce].tokenId,
-            s.itemsDeposits[_nonce].tokenAmount
+            s.itemsDeposits[_depositId].grantor,
+            s.itemsDeposits[_depositId].tokenAddress,
+            s.itemsDeposits[_depositId].tokenId,
+            s.itemsDeposits[_depositId].tokenAmount
         )
     {
-        DepositInfo memory _depositInfo = s.itemsDeposits[_nonce];
+        DepositInfo memory _depositInfo = s.itemsDeposits[_depositId];
         require(_depositInfo.tokenAmount > 0, "ItemsRolesRegistryFacet: deposit does not exist");
         require(
-            s.itemsRoleAssignments[_nonce].grantee == address(0) ||
-                s.itemsRoleAssignments[_nonce].expirationDate < block.timestamp ||
-                s.itemsRoleAssignments[_nonce].revocable,
+            s.itemsRoleAssignments[_depositId].grantee == address(0) ||
+                s.itemsRoleAssignments[_depositId].expirationDate < block.timestamp ||
+                s.itemsRoleAssignments[_depositId].revocable,
             "ItemsRolesRegistryFacet: nft is delegated"
         );
 
-        delete s.itemsDeposits[_nonce];
+        delete s.itemsDeposits[_depositId];
 
         _transferFrom(address(this), _depositInfo.grantor, _depositInfo.tokenAddress, _depositInfo.tokenId, _depositInfo.tokenAmount);
 
-        emit Withdrew(_nonce, _depositInfo.grantor, _depositInfo.tokenId, _depositInfo.tokenAddress, _depositInfo.tokenAmount);
+        emit Withdrew(_depositId, _depositInfo.grantor, _depositInfo.tokenId, _depositInfo.tokenAddress, _depositInfo.tokenAmount);
     }
 
     function setRoleApprovalForAll(address _tokenAddress, address _operator, bool _isApproved) external override {
@@ -175,12 +186,12 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
 
     /** View Functions **/
 
-    function roleData(uint256 _nonce, bytes32 _role) external view override returns (RoleData memory) {
-        return s.itemsRoleAssignments[_nonce];
+    function roleData(uint256 _depositId, bytes32 _role) external view override returns (RoleData memory) {
+        return s.itemsRoleAssignments[_depositId];
     }
 
-    function roleExpirationDate(uint256 _nonce, bytes32 _role) external view override returns (uint64 expirationDate_) {
-        return s.itemsRoleAssignments[_nonce].expirationDate;
+    function roleExpirationDate(uint256 _depositId, bytes32 _role) external view override returns (uint64 expirationDate_) {
+        return s.itemsRoleAssignments[_depositId].expirationDate;
     }
 
     function isRoleApprovedForAll(address _tokenAddress, address _grantor, address _operator) public view override returns (bool) {
