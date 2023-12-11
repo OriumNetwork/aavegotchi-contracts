@@ -221,6 +221,11 @@ struct ERC721BuyOrder {
     bool[] validationOptions;
 }
 
+struct EquipedDelegatedItemInfo {
+    uint256 depositId;
+    uint256 balance;
+}
+
 struct AppStorage {
     mapping(address => AavegotchiCollateralTypeInfo) collateralTypeInfo;
     mapping(address => uint256) collateralTypeIndexes;
@@ -352,7 +357,7 @@ struct AppStorage {
     mapping(uint256 => mapping(uint256 => uint256)) depositIdToItemIdToGotchiId;
     
     // gotchiId => itemId => depositId
-    mapping(uint256 => mapping(uint256 => uint256)) gotchiIdToItemIdToDepositId;
+    mapping(uint256 => mapping(uint256 => EquipedDelegatedItemInfo)) gotchiIdToItemIdToDepositId;
 }
 
 library LibAppStorage {

@@ -87,7 +87,7 @@ export class time {
   };
 }
 
-export const LargeGotchiOwner = "0x7d20e3ae9a4198c2cfc0e2d1d0bb81cbc41ab0a0";
+export const LargeGotchiOwner = "0x7D20E3aE9A4198c2CfC0E2d1D0Bb81cBc41ab0A0";
 
 export const LargeGotchiOwnerAavegotchis = [
   8503, 6142, 8785, 600, 6374, 18449, 13789, 6882, 3819, 7480, 24492, 22271,
