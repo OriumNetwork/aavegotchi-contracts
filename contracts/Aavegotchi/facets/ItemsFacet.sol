@@ -241,8 +241,6 @@ contract ItemsFacet is Modifiers {
             //If a wearable was equipped in this slot and can be transferred, transfer back to owner.
 
             if (existingEquippedWearableId != 0 && s.itemTypes[existingEquippedWearableId].canBeTransferred) {
-     
-
                 // remove wearable from Aavegotchi and transfer item to owner
                 _removeWearableFromGotchi(_tokenId, existingEquippedWearableId);
             }
