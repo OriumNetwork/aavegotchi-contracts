@@ -386,6 +386,32 @@ describe("ItemsRolesRegistryFacet", async () => {
         .withArgs(aavegotchiDiamondAddress, gotchiId, wearableIds[3], 1)
         .to.not.emit(libEventHandler, "TransferSingle");
     });
+    it("should NOT equip a delegated wearable if sender doesn't enough delegated balance", async function () {
+      const newRoleAssignment = await buildRoleAssignment({
+        tokenAddress: wearablesFacet.address,
+        tokenId: wearableIds[0],
+        grantor: grantor.address,
+        grantee: await grantee.getAddress(),
+        tokenAmount: 1,
+      });
+      await wearablesFacet
+        .connect(grantor)
+        .setApprovalForAll(ItemsRolesRegistryFacet.address, true);
+
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(newRoleAssignment)
+      ).to.not.be.reverted;
+
+      await expect(
+        itemsFacet
+          .connect(grantee)
+          .equipDelegatedWearables(
+            gotchiId,
+            [0, 0, 0, 0, wearableIds[0], wearableIds[0], 0, 0, 0, 0, 0, 0, 0, 0 ,0 ,0],
+            [0, 0, 0, 0, newRoleAssignment.nonce, newRoleAssignment.nonce, 0, 0, 0, 0, 0, 0, 0, 0 ,0 ,0]
+          )
+      ).to.be.revertedWith("ItemsFacet: sender doesn't have enough delegated balance");
+    })
     it("should NOT equip a delegated wearable if the depositId is expired", async () => {
       await network.provider.send("evm_increaseTime", [ONE_DAY]);
       await expect(

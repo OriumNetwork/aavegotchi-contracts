@@ -319,7 +319,6 @@ contract ItemsFacet is Modifiers {
         } else {
             // if the sender doesn't have enough balance, check if they have enough delegated balance
             require(_nftBalance + s.ownerItemBalances[_sender][_toEquipWearableId] >= _neededBalance, "ItemsFacet: Wearable isn't in inventory");
-            require(s.gotchiIdToItemIdToDepositId[_gotchiId][_toEquipWearableId].depositId == 0, "ItemsFacet: Wearable already delegated to another gotchi");
 
             LibItems.removeFromOwner(_sender, _toEquipWearableId, _balToTransfer);
             IEventHandlerFacet(s.wearableDiamond).emitTransferSingleEvent(_sender, _sender, address(this), _toEquipWearableId, _balToTransfer);
@@ -339,12 +338,6 @@ contract ItemsFacet is Modifiers {
         uint256 _delegatedBalance = s.gotchiIdToItemIdToDepositId[_gotchiId][_existingEquippedWearableId].balance;
 
         if (_depositId != 0) {
-            require(s.itemsRoleAssignments[_depositId].grantee == LibMeta.msgSender(), "ItemsFacet: Wearable not delegated to sender");
-            require(
-                s.depositIdToItemIdToGotchiId[_depositId][_existingEquippedWearableId] == _gotchiId,
-                "ItemsFacet: Wearable is not delegated to this gotchi"
-            );
-         
             // remove wearable from Aavegotchi and delete delegation
             LibItems.removeFromParent(address(this), _gotchiId, _existingEquippedWearableId, 1);
 
