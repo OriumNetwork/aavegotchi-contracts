@@ -33,7 +33,7 @@ export const wearableSlots = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 export async function buildRoleAssignment({
   // default values
   nonce = generateRandomInt(),
-  role = "EQUIP_WEARABLE_ROLE",
+  role = "Player()",
   tokenAddress = wearableDiamondAddress,
   tokenId = wearableIds[0],
   tokenAmount = 1,

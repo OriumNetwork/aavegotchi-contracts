@@ -179,7 +179,7 @@ describe("ItemsRolesRegistryFacet", async () => {
         .to.not.emit(libEventHandler, "TransferSingle");
 
       await expect(
-        ItemsRolesRegistryFacet.connect(grantor).revokeRoleFrom(RoleAssignment.nonce, RoleAssignment.role)
+        ItemsRolesRegistryFacet.connect(grantor).revokeRoleFrom(RoleAssignment.nonce, RoleAssignment.role, RoleAssignment.grantee)
       ).to.emit(libERC1155, "TransferFromParent")
         .withArgs(aavegotchiDiamondAddress, gotchiId, wearableIds[3], 1)
         .to.not.emit(libEventHandler, "TransferSingle");

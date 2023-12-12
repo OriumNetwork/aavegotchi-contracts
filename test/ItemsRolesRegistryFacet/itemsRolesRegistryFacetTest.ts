@@ -18,6 +18,7 @@ import {
   wearableDiamondAddress,
   wearableIds,
   RoleAssignment,
+  generateRoleId,
 } from "./helpers";
 import { itemManagerAlt } from "../../scripts/helperFunctions";
 import { upgradeWithNewFacets } from "./upgradeScript";
@@ -86,81 +87,100 @@ describe("ItemsRolesRegistryFacet", async () => {
     );
   });
 
-  describe("grantRole", async () => {
-    it("should revert without a reason if tokenAddress is not an ERC-1155 contract", async () => {
-      const roleAssignment = await buildRoleAssignment();
-      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment))
-        .to.be.reverted;
-    });
+  describe('grantRole', async () => {
+    it('should revert without a reason if tokenAddress is not an ERC-1155 contract', async () => {
+      const roleAssignment = await buildRoleAssignment()
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)).to.be.reverted
+    })
 
-    it("should revert if expirationDate is in the past", async () => {
+    it('should revert if expirationDate is in the past', async () => {
       const roleAssignment = await buildRoleAssignment({
         expirationDate: (await time.latest()) - ONE_DAY,
-      });
-      await expect(
-        ItemsRolesRegistryFacet.grantRoleFrom(roleAssignment)
-      ).to.be.revertedWith(
-        "ItemsRolesRegistryFacet: expiration date must be in the future"
-      );
-    });
+      })
+      await expect(ItemsRolesRegistryFacet.grantRoleFrom(roleAssignment)).to.be.revertedWith(
+        'ItemsRolesRegistryFacet: expiration date must be in the future',
+      )
+    })
 
-    it("should revert when sender is not grantor or approved", async () => {
-      const roleAssignment = await buildRoleAssignment();
-      await expect(
-        ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)
-      ).to.be.revertedWith("ItemsRolesRegistryFacet: account not approved");
-    });
+    it('should revert when sender is not grantor or approved', async () => {
+      const roleAssignment = await buildRoleAssignment({
+        tokenAddress: wearablesFacet.address,
+        grantee: grantee.address,
+      })
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)).to.be.revertedWith(
+        'ItemsRolesRegistryFacet: account not approved',
+      )
+    })
 
-    it("should revert if tokenAmount is zero", async () => {
+    it('should revert if tokenAmount is zero', async () => {
       const roleAssignment = await buildRoleAssignment({
         tokenAmount: 0,
-      });
-      await expect(
-        ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)
-      ).to.be.revertedWith(
-        "ItemsRolesRegistryFacet: tokenAmount must be greater than zero"
-      );
-    });
+      })
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)).to.be.revertedWith(
+        'ItemsRolesRegistryFacet: tokenAmount must be greater than zero',
+      )
+    })
 
-    it("should revert when grantor does not have enough tokens", async () => {
+    it('should revert when grantor does not have enough tokens', async () => {
       const roleAssignment = await buildRoleAssignment({
         tokenAddress: wearablesFacet.address,
         grantor: grantor.address,
-        tokenAmount: 999999,
-      });
-      await wearablesFacet
-        .connect(grantor)
-        .setApprovalForAll(ItemsRolesRegistryFacet.address, true);
-      await expect(
-        ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)
-      ).to.be.revertedWith("LibItems: Doesn't have that many to transfer");
-    });
+        grantee: grantee.address,
+        tokenAmount: 99999,
+      })
+      await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)).to.be.revertedWith(
+        "LibItems: Doesn't have that many to transfer",
+      )
+    })
 
-    it("should revert if nonce is zero", async () => {
+    it('should revert if nonce is zero', async () => {
       const roleAssignment = await buildRoleAssignment({
         nonce: 0,
         tokenAddress: wearablesFacet.address,
         grantor: grantor.address,
-      });
-      await wearablesFacet
-        .connect(grantor)
-        .setApprovalForAll(ItemsRolesRegistryFacet.address, true);
-      await expect(
-        ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)
-      ).to.be.revertedWith("ItemsRolesRegistryFacet: nonce must be greater than zero");
-    });
+      })
+      await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)).to.be.revertedWith(
+        'ItemsRolesRegistryFacet: depositId must be greater than zero',
+      )
+      expect(await wearablesFacet.balanceOf(grantor.address, roleAssignment.tokenId)).to.be.equal(1000)
+    })
 
-    describe("when nonce does not exist", async () => {
-      it("should grant role when grantor is sender and has enough tokens", async () => {
+    it('should revert if role is not Player() Role', async () => {
+      const roleAssignment = await buildRoleAssignment({
+        role: 'NOT_UNIQUE_ROLE',
+        tokenAddress: wearablesFacet.address,
+        grantor: grantor.address,
+      })
+      await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)).to.be.revertedWith(
+        'ItemsRolesRegistryFacet: role not supported',
+      )
+    })
+
+    it('should revert if grantee is zero address', async () => {
+      const roleAssignment = await buildRoleAssignment({
+        grantee: AddressZero,
+        tokenAddress: wearablesFacet.address,
+        grantor: grantor.address,
+      })
+      await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment)).to.be.revertedWith(
+        'ItemsRolesRegistryFacet: grantee must not be zero address',
+      )
+    })
+
+    describe('when nonce does not exist', async () => {
+      it('should grant role when grantor is sender and has enough tokens', async () => {
         const roleAssignment = await buildRoleAssignment({
+          tokenAddress: wearablesFacet.address,
           grantor: grantor.address,
-        });
-
-        await wearablesFacet
-          .connect(grantor)
-          .setApprovalForAll(ItemsRolesRegistryFacet.address, true);
+          grantee: grantee.address,
+        })
+        await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
         await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(roleAssignment))
-          .to.emit(ItemsRolesRegistryFacet, "RoleGranted")
+          .to.emit(ItemsRolesRegistryFacet, 'RoleGranted')
           .withArgs(
             roleAssignment.nonce,
             roleAssignment.role,
@@ -171,26 +191,24 @@ describe("ItemsRolesRegistryFacet", async () => {
             roleAssignment.grantee,
             roleAssignment.expirationDate,
             roleAssignment.revocable,
-            roleAssignment.data
-          );
-      });
+            roleAssignment.data,
+          )
+      })
 
-      it("should grant role when sender is approved and grantor has enough tokens", async () => {
+      it('should grant role when sender is approved and grantor has enough tokens', async () => {
         const roleAssignment = await buildRoleAssignment({
+          tokenAddress: wearablesFacet.address,
           grantor: grantor.address,
-        });
-        await wearablesFacet
-          .connect(grantor)
-          .setApprovalForAll(ItemsRolesRegistryFacet.address, true);
+          grantee: grantee.address,
+        })
+        await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
         await ItemsRolesRegistryFacet.connect(grantor).setRoleApprovalForAll(
           roleAssignment.tokenAddress,
           anotherUser.address,
-          true
-        );
-        await expect(
-          ItemsRolesRegistryFacet.connect(anotherUser).grantRoleFrom(roleAssignment)
+          true,
         )
-          .to.emit(ItemsRolesRegistryFacet, "RoleGranted")
+        await expect(ItemsRolesRegistryFacet.connect(anotherUser).grantRoleFrom(roleAssignment))
+          .to.emit(ItemsRolesRegistryFacet, 'RoleGranted')
           .withArgs(
             roleAssignment.nonce,
             roleAssignment.role,
@@ -201,24 +219,56 @@ describe("ItemsRolesRegistryFacet", async () => {
             roleAssignment.grantee,
             roleAssignment.expirationDate,
             roleAssignment.revocable,
-            roleAssignment.data
-          );
-      });
-    });
-  });
+            roleAssignment.data,
+          )
+      })
+      it('should revert if grantor tries to update a grant with a nonce that its not theirs', async function () {
+        const roleAssignment = await buildRoleAssignment({
+          tokenAddress: wearablesFacet.address,
+          grantor: grantor.address,
+          grantee: grantee.address,
+        })
+        await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
+        await ItemsRolesRegistryFacet.connect(grantor).setRoleApprovalForAll(
+          roleAssignment.tokenAddress,
+          anotherUser.address,
+          true,
+        )
+        await expect(ItemsRolesRegistryFacet.connect(anotherUser).grantRoleFrom(roleAssignment))
+          .to.emit(ItemsRolesRegistryFacet, 'RoleGranted')
+          .withArgs(
+            roleAssignment.nonce,
+            roleAssignment.role,
+            roleAssignment.tokenAddress,
+            roleAssignment.tokenId,
+            roleAssignment.tokenAmount,
+            roleAssignment.grantor,
+            roleAssignment.grantee,
+            roleAssignment.expirationDate,
+            roleAssignment.revocable,
+            roleAssignment.data,
+          )
 
-  describe("when nonce exists", async () => {
-    let RoleAssignment: RoleAssignment;
+        roleAssignment.grantor = anotherUser.address
+        await expect(ItemsRolesRegistryFacet.connect(anotherUser).grantRoleFrom(roleAssignment)).to.be.revertedWith(
+          'ItemsRolesRegistryFacet: grantor mismatch',
+        )
+      })
+    })
+  })
+
+  describe('when nonce exists', async () => {
+    let RoleAssignment: RoleAssignment
 
     beforeEach(async () => {
       RoleAssignment = await buildRoleAssignment({
+        tokenAddress: wearablesFacet.address,
         grantor: grantor.address,
-      });
-      await wearablesFacet
-        .connect(grantor)
-        .setApprovalForAll(ItemsRolesRegistryFacet.address, true);
+        grantee: grantee.address,
+      })
+      await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
       await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(RoleAssignment))
-        .to.emit(ItemsRolesRegistryFacet, "RoleGranted")
+        .to.emit(ItemsRolesRegistryFacet, 'RoleGranted')
         .withArgs(
           RoleAssignment.nonce,
           RoleAssignment.role,
@@ -229,38 +279,62 @@ describe("ItemsRolesRegistryFacet", async () => {
           RoleAssignment.grantee,
           RoleAssignment.expirationDate,
           RoleAssignment.revocable,
-          RoleAssignment.data
-        );
-    });
+          RoleAssignment.data,
+        )
+    })
 
-    it("should revert if nonce is not expired", async () => {
+    it('should revert if nonce is not expired', async () => {
       const revocableRoleAssignment = await buildRoleAssignment({
         tokenAddress: wearablesFacet.address,
         grantor: grantor.address,
+        grantee: grantee.address,
         revocable: false,
-      });
+      })
 
-      await ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(revocableRoleAssignment);
-      await expect(
-        ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(revocableRoleAssignment)
-      ).to.be.revertedWith(
-        "ItemsRolesRegistryFacet: nonce is not expired or is not revocable"
-      );
-    });
+      await ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(revocableRoleAssignment)
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(revocableRoleAssignment)).to.be.revertedWith(
+        'ItemsRolesRegistryFacet: depositId is not expired or is not revocable',
+      )
+    })
 
     it("should revert if grantor's balance is insufficient", async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom({
           ...RoleAssignment,
           nonce: generateRandomInt(),
-          tokenAmount: 9999999999,
-        })
-      ).to.be.revertedWith("LibItems: Doesn't have that many to transfer");
-    });
+          tokenAmount: 9999999,
+        }),
+      ).to.be.revertedWith("LibItems: Doesn't have that many to transfer")
+    })
 
-    it("should grant role if tokens deposited are equal to tokens requested", async () => {
+    it('should revert if tokenAddress mismatch', async () => {
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom({
+          ...RoleAssignment,
+          tokenAddress: anotherUser.address,
+        }),
+      ).to.be.revertedWith('ItemsRolesRegistryFacet: Only Item NFTs are supported')
+    })
+    it('should revert if tokenId mismatch', async () => {
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom({
+          ...RoleAssignment,
+          tokenId: 1,
+        }),
+      ).to.be.revertedWith('ItemsRolesRegistryFacet: tokenId mismatch')
+    })
+    it('should revert if tokenAmount mismatch', async () => {
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom({
+          ...RoleAssignment,
+          tokenAmount: generateRandomInt(),
+        }),
+      ).to.be.revertedWith('ItemsRolesRegistryFacet: tokenAmount mismatch')
+    })
+
+    it('should grant role if tokens deposited are equal to tokens requested', async () => {
       await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(RoleAssignment))
-        .to.emit(ItemsRolesRegistryFacet, "RoleGranted")
+        .to.emit(ItemsRolesRegistryFacet, 'RoleGranted')
         .withArgs(
           RoleAssignment.nonce,
           RoleAssignment.role,
@@ -271,97 +345,77 @@ describe("ItemsRolesRegistryFacet", async () => {
           RoleAssignment.grantee,
           RoleAssignment.expirationDate,
           RoleAssignment.revocable,
-          RoleAssignment.data
+          RoleAssignment.data,
         )
         // should not transfer any tokens
-        .to.not.emit(libEventHandler, "TransferSingle");
-    });
-  });
+        .to.not.emit(libEventHandler, 'TransferSingle')
+    })
+  })
 
-  describe("revokeRole", async () => {
-    let RoleAssignment: RoleAssignment;
+  describe('revokeRole', async () => {
+    let RoleAssignment: RoleAssignment
 
     beforeEach(async () => {
       RoleAssignment = await buildRoleAssignment({
         tokenAddress: wearablesFacet.address,
         grantor: grantor.address,
         grantee: grantee.address,
-      });
-      await wearablesFacet
-        .connect(grantor)
-        .setApprovalForAll(ItemsRolesRegistryFacet.address, true);
+      })
+      await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(RoleAssignment)).to.not.be.reverted
+    })
 
-      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(RoleAssignment))
-        .to.not.be.reverted;
-    });
-
-    it("should revert if grantee is invalid", async () => {
-      const newRoleAssignment = await buildRoleAssignment({
-        tokenAddress: wearablesFacet.address,
-        grantor: grantor.address,
-        revocable: false,
-      });
-
+    it('should revert if grantee is invalid', async () => {
       await expect(
-        ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(newRoleAssignment)
-      );
+        ItemsRolesRegistryFacet.connect(grantor).revokeRoleFrom(RoleAssignment.nonce, RoleAssignment.role, AddressZero),
+      ).to.be.revertedWith('ItemsRolesRegistryFacet: grantee mismatch')
+    })
 
-      await expect(
-        ItemsRolesRegistryFacet.connect(grantor).revokeRoleFrom(
-          newRoleAssignment.nonce,
-          newRoleAssignment.role
-        )
-      ).to.be.revertedWith("ItemsRolesRegistryFacet: invalid grantee");
-    });
-
-    it("should revert if nonce is not expired and is not revocable", async () => {
+    it('should revert if nonce is not expired and is not revocable', async () => {
       const newRoleAssignment = await buildRoleAssignment({
         nonce: generateRandomInt(),
         tokenAddress: wearablesFacet.address,
         grantor: grantor.address,
         grantee: grantee.address,
         revocable: false,
-      });
+      })
 
-      await ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(newRoleAssignment);
+      await ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(newRoleAssignment)
 
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).revokeRoleFrom(
           newRoleAssignment.nonce,
-          newRoleAssignment.role
-        )
-      ).to.be.revertedWith(
-        "ItemsRolesRegistryFacet: nonce is not expired or is not revocable"
-      );
-    });
+          newRoleAssignment.role,
+          newRoleAssignment.grantee,
+        ),
+      ).to.be.revertedWith('ItemsRolesRegistryFacet: depositId is not expired or is not revocable')
+    })
 
-    it("should revert if caller is not approved", async () => {
+    it('should revert if caller is not approved', async () => {
       await ItemsRolesRegistryFacet.connect(grantor).setRoleApprovalForAll(
         RoleAssignment.tokenAddress,
         anotherUser.address,
-        false
-      );
-      await ItemsRolesRegistryFacet.connect(grantee).setRoleApprovalForAll(
-        RoleAssignment.tokenAddress,
-        anotherUser.address,
-        false
-      );
+        false,
+      )
+
       await expect(
         ItemsRolesRegistryFacet.connect(anotherUser).revokeRoleFrom(
           RoleAssignment.nonce,
-          RoleAssignment.role
-        )
-      ).to.be.revertedWith("ItemsRolesRegistryFacet: sender must be approved");
-    });
+          RoleAssignment.role,
+          RoleAssignment.grantee,
+        ),
+      ).to.be.revertedWith('ItemsRolesRegistryFacet: sender must be approved')
+    })
 
-    it("should revoke role if sender is grantor", async () => {
+    it('should revoke role if sender is grantor', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).revokeRoleFrom(
           RoleAssignment.nonce,
-          RoleAssignment.role
-        )
+          RoleAssignment.role,
+          RoleAssignment.grantee,
+        ),
       )
-        .to.emit(ItemsRolesRegistryFacet, "RoleRevoked")
+        .to.emit(ItemsRolesRegistryFacet, 'RoleRevoked')
         .withArgs(
           RoleAssignment.nonce,
           RoleAssignment.role,
@@ -369,75 +423,97 @@ describe("ItemsRolesRegistryFacet", async () => {
           RoleAssignment.tokenId,
           RoleAssignment.tokenAmount,
           RoleAssignment.grantor,
-          RoleAssignment.grantee
-        );
-    });
+          RoleAssignment.grantee,
+        )
+    })
 
-    it("should revoke role if sender is approved by grantor", async () => {
-      await ItemsRolesRegistryFacet.connect(grantor).setRoleApprovalForAll(
-        RoleAssignment.tokenAddress,
-        anotherUser.address,
-        true
-      );
-      await expect(
-        ItemsRolesRegistryFacet.connect(anotherUser).revokeRoleFrom(
-          RoleAssignment.nonce,
-          RoleAssignment.role
-        )
-      )
-        .to.emit(ItemsRolesRegistryFacet, "RoleRevoked")
-        .withArgs(
-          RoleAssignment.nonce,
-          RoleAssignment.role,
-          RoleAssignment.tokenAddress,
-          RoleAssignment.tokenId,
-          RoleAssignment.tokenAmount,
-          RoleAssignment.grantor,
-          RoleAssignment.grantee
-        );
-    });
-    it("should revoke role if sender is approved by grantee", async () => {
-      await ItemsRolesRegistryFacet.connect(grantee).setRoleApprovalForAll(
-        RoleAssignment.tokenAddress,
-        anotherUser.address,
-        true
-      );
-      await expect(
-        ItemsRolesRegistryFacet.connect(anotherUser).revokeRoleFrom(
-          RoleAssignment.nonce,
-          RoleAssignment.role
-        )
-      )
-        .to.emit(ItemsRolesRegistryFacet, "RoleRevoked")
-        .withArgs(
-          RoleAssignment.nonce,
-          RoleAssignment.role,
-          RoleAssignment.tokenAddress,
-          RoleAssignment.tokenId,
-          RoleAssignment.tokenAmount,
-          RoleAssignment.grantor,
-          RoleAssignment.grantee
-        );
-    });
-
-    it("should revoke role if sender is grantee", async () => {
+    it('should revert if role is not Player()', async () => {
       const newRoleAssignment = await buildRoleAssignment({
         nonce: generateRandomInt(),
         tokenAddress: wearablesFacet.address,
         grantor: grantor.address,
         grantee: grantee.address,
         revocable: false,
-      });
+        role: 'NOT_UNIQUE_ROLE',
+      })
 
-      await ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(newRoleAssignment);
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).revokeRoleFrom(
+          newRoleAssignment.nonce,
+          newRoleAssignment.role,
+          newRoleAssignment.grantee,
+        ),
+      ).to.be.revertedWith('ItemsRolesRegistryFacet: role not supported')
+    })
+
+    it('should revoke role if sender is approved by grantor', async () => {
+      await ItemsRolesRegistryFacet.connect(grantor).setRoleApprovalForAll(
+        RoleAssignment.tokenAddress,
+        anotherUser.address,
+        true,
+      )
+      await expect(
+        ItemsRolesRegistryFacet.connect(anotherUser).revokeRoleFrom(
+          RoleAssignment.nonce,
+          RoleAssignment.role,
+          RoleAssignment.grantee,
+        ),
+      )
+        .to.emit(ItemsRolesRegistryFacet, 'RoleRevoked')
+        .withArgs(
+          RoleAssignment.nonce,
+          RoleAssignment.role,
+          RoleAssignment.tokenAddress,
+          RoleAssignment.tokenId,
+          RoleAssignment.tokenAmount,
+          RoleAssignment.grantor,
+          RoleAssignment.grantee,
+        )
+    })
+    it('should revoke role if sender is approved by grantee', async () => {
+      await ItemsRolesRegistryFacet.connect(grantee).setRoleApprovalForAll(
+        RoleAssignment.tokenAddress,
+        anotherUser.address,
+        true,
+      )
+      await expect(
+        ItemsRolesRegistryFacet.connect(anotherUser).revokeRoleFrom(
+          RoleAssignment.nonce,
+          RoleAssignment.role,
+          RoleAssignment.grantee,
+        ),
+      )
+        .to.emit(ItemsRolesRegistryFacet, 'RoleRevoked')
+        .withArgs(
+          RoleAssignment.nonce,
+          RoleAssignment.role,
+          RoleAssignment.tokenAddress,
+          RoleAssignment.tokenId,
+          RoleAssignment.tokenAmount,
+          RoleAssignment.grantor,
+          RoleAssignment.grantee,
+        )
+    })
+
+    it('should revoke role if sender is grantee', async () => {
+      const newRoleAssignment = await buildRoleAssignment({
+        nonce: generateRandomInt(),
+        tokenAddress: wearablesFacet.address,
+        grantor: grantor.address,
+        grantee: grantee.address,
+        revocable: false,
+      })
+
+      await ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(newRoleAssignment)
 
       await expect(
         ItemsRolesRegistryFacet.connect(grantee).revokeRoleFrom(
           newRoleAssignment.nonce,
-          newRoleAssignment.role
-        )
+          newRoleAssignment.role,
+          RoleAssignment.grantee,
+        ),
       )
-        .to.emit(ItemsRolesRegistryFacet, "RoleRevoked")
+        .to.emit(ItemsRolesRegistryFacet, 'RoleRevoked')
         .withArgs(
           newRoleAssignment.nonce,
           newRoleAssignment.role,
@@ -445,41 +521,23 @@ describe("ItemsRolesRegistryFacet", async () => {
           newRoleAssignment.tokenId,
           newRoleAssignment.tokenAmount,
           newRoleAssignment.grantor,
-          newRoleAssignment.grantee
-        );
-    });
-  });
+          newRoleAssignment.grantee,
+        )
+    })
+  })
 
-  describe("setRoleApprovalForAll", async () => {
-    it("should approve and revoke approval", async () => {
-      expect(
-        await ItemsRolesRegistryFacet.isRoleApprovedForAll(
-          AddressZero,
-          grantor.address,
-          anotherUser.address
-        )
-      ).to.be.false;
-      expect(
-        await ItemsRolesRegistryFacet.connect(grantor).setRoleApprovalForAll(
-          AddressZero,
-          anotherUser.address,
-          true
-        )
-      )
-        .to.emit(ItemsRolesRegistryFacet, "RoleApprovalForAll")
-        .withArgs(AddressZero, grantor.address, anotherUser.address, true);
-      expect(
-        await ItemsRolesRegistryFacet.isRoleApprovedForAll(
-          AddressZero,
-          grantor.address,
-          anotherUser.address
-        )
-      ).to.be.true;
-    });
-  });
+  describe('setRoleApprovalForAll', async () => {
+    it('should approve and revoke approval', async () => {
+      expect(await ItemsRolesRegistryFacet.isRoleApprovedForAll(AddressZero, grantor.address, anotherUser.address)).to.be.false
+      expect(await ItemsRolesRegistryFacet.connect(grantor).setRoleApprovalForAll(AddressZero, anotherUser.address, true))
+        .to.emit(ItemsRolesRegistryFacet, 'RoleApprovalForAll')
+        .withArgs(AddressZero, grantor.address, anotherUser.address, true)
+      expect(await ItemsRolesRegistryFacet.isRoleApprovedForAll(AddressZero, grantor.address, anotherUser.address)).to.be.true
+    })
+  })
 
-  describe("withdraw", async function () {
-    let RoleAssignment: RoleAssignment;
+  describe('withdraw', async function () {
+    let RoleAssignment: RoleAssignment
 
     beforeEach(async () => {
       RoleAssignment = await buildRoleAssignment({
@@ -487,115 +545,138 @@ describe("ItemsRolesRegistryFacet", async () => {
         grantor: grantor.address,
         grantee: grantee.address,
         revocable: false,
-      });
+      })
+      await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(RoleAssignment)).to.not.be.reverted
+    })
 
-      await wearablesFacet
-        .connect(grantor)
-        .setApprovalForAll(ItemsRolesRegistryFacet.address, true);
+    it('should revert nonce role is not expired', async () => {
+      await expect(ItemsRolesRegistryFacet.connect(grantor).withdraw(RoleAssignment.nonce)).to.be.revertedWith(
+        'ItemsRolesRegistryFacet: token has an active role',
+      )
+    })
 
-      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(RoleAssignment))
-        .to.not.be.reverted;
-    });
-    it("should revert nonce role is not expired", async () => {
-      await expect(
-        ItemsRolesRegistryFacet.connect(grantor).withdraw(RoleAssignment.nonce)
-      ).to.be.revertedWith("ItemsRolesRegistryFacet: nft is delegated");
-    });
-    it("should revert if nonce does not exist", async () => {
-      await expect(
-        ItemsRolesRegistryFacet.connect(grantor).withdraw(generateRandomInt())
-      ).to.be.revertedWith(
-        "ItemsRolesRegistryFacet: tokenAmount must be greater than zero"
-      );
-    });
-    it("should not revert if nonce is expired", async () => {
-      await time.increase(ONE_DAY);
+    it('should revert if nonce does not exist', async () => {
+      await expect(ItemsRolesRegistryFacet.connect(grantor).withdraw(generateRandomInt())).to.be.revertedWith(
+        'ItemsRolesRegistryFacet: account not approved',
+      )
+    })
+
+    it('should not revert if nonce is expired', async () => {
+      await time.increase(ONE_DAY)
       await expect(ItemsRolesRegistryFacet.connect(grantor).withdraw(RoleAssignment.nonce))
-        .to.emit(ItemsRolesRegistryFacet, "Withdrew")
+        .to.emit(ItemsRolesRegistryFacet, 'Withdrew')
         .withArgs(
           RoleAssignment.nonce,
           RoleAssignment.grantor,
-          RoleAssignment.tokenId,
           RoleAssignment.tokenAddress,
-          RoleAssignment.tokenAmount
-        );
-    });
-    it("should not revert if nonce has a role revoked", async () => {
-      await time.increase(ONE_DAY);
+          RoleAssignment.tokenId,
+          RoleAssignment.tokenAmount,
+        )
+    })
+
+    it('should not revert if nonce has a role revoked', async () => {
+      await time.increase(ONE_DAY)
       await ItemsRolesRegistryFacet.connect(grantor).revokeRoleFrom(
         RoleAssignment.nonce,
-        RoleAssignment.role
-      );
+        RoleAssignment.role,
+        RoleAssignment.grantee,
+      )
       await expect(ItemsRolesRegistryFacet.connect(grantor).withdraw(RoleAssignment.nonce))
-        .to.emit(ItemsRolesRegistryFacet, "Withdrew")
+        .to.emit(ItemsRolesRegistryFacet, 'Withdrew')
         .withArgs(
           RoleAssignment.nonce,
           RoleAssignment.grantor,
-          RoleAssignment.tokenId,
           RoleAssignment.tokenAddress,
-          RoleAssignment.tokenAmount
-        );
-    });
-    it("shoudl not revert if nonce has a revocable role", async () => {
-      await time.increase(ONE_DAY);
-      RoleAssignment.revocable = true;
-      RoleAssignment.expirationDate = (await time.latest()) + ONE_DAY;
-      await ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(RoleAssignment);
-      await expect(ItemsRolesRegistryFacet.connect(grantor).withdraw(RoleAssignment.nonce))
-        .to.emit(ItemsRolesRegistryFacet, "Withdrew")
-        .withArgs(
-          RoleAssignment.nonce,
-          RoleAssignment.grantor,
           RoleAssignment.tokenId,
-          RoleAssignment.tokenAddress,
-          RoleAssignment.tokenAmount
-        );
-    });
-  });
+          RoleAssignment.tokenAmount,
+        )
+    })
 
-  describe("View Functions", async () => {
-    let RoleAssignment: RoleAssignment;
+    it('shoudl not revert if nonce has a revocable role', async () => {
+      await time.increase(ONE_DAY)
+      RoleAssignment.revocable = true
+      RoleAssignment.expirationDate = (await time.latest()) + ONE_DAY
+      await ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(RoleAssignment)
+      await expect(ItemsRolesRegistryFacet.connect(grantor).withdraw(RoleAssignment.nonce))
+        .to.emit(ItemsRolesRegistryFacet, 'Withdrew')
+        .withArgs(
+          RoleAssignment.nonce,
+          RoleAssignment.grantor,
+          RoleAssignment.tokenAddress,
+          RoleAssignment.tokenId,
+          RoleAssignment.tokenAmount,
+        )
+    })
+  })
+
+  describe('View Functions', async () => {
+    let RoleAssignment: RoleAssignment
 
     beforeEach(async () => {
       RoleAssignment = await buildRoleAssignment({
         tokenAddress: wearablesFacet.address,
         grantor: grantor.address,
         grantee: grantee.address,
-      });
-      await wearablesFacet
-        .connect(grantor)
-        .setApprovalForAll(ItemsRolesRegistryFacet.address, true);
-      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(RoleAssignment))
-        .to.not.be.reverted;
-    });
+      })
+      await wearablesFacet.connect(grantor).setApprovalForAll(ItemsRolesRegistryFacet.address, true)
+      await expect(ItemsRolesRegistryFacet.connect(grantor).grantRoleFrom(RoleAssignment)).to.not.be.reverted
+    })
 
-    it("should return the role data", async () => {
-      const roleData = await ItemsRolesRegistryFacet.roleData(
-        RoleAssignment.nonce,
-        RoleAssignment.role
-      );
-
-      expect(roleData.expirationDate).to.be.equal(
-        RoleAssignment.expirationDate
-      );
-      expect(roleData.revocable).to.be.equal(RoleAssignment.revocable);
-      expect(roleData.data).to.be.equal(RoleAssignment.data);
-    });
-
-    it("should return the expiration date", async () => {
-      expect(
-        await ItemsRolesRegistryFacet.roleExpirationDate(
+    describe('RoleData', async () => {
+      it('should return the role data', async () => {
+        const roleData = await ItemsRolesRegistryFacet.roleData(
           RoleAssignment.nonce,
-          RoleAssignment.role
+          RoleAssignment.role,
+          RoleAssignment.grantee,
         )
-      ).to.be.equal(RoleAssignment.expirationDate);
-    });
 
-  });
+        expect(roleData.expirationDate).to.be.equal(RoleAssignment.expirationDate)
+        expect(roleData.revocable).to.be.equal(RoleAssignment.revocable)
+        expect(roleData.data).to.be.equal(RoleAssignment.data)
+      })
+      it('should revert if role is not Player()', async () => {
+        await expect(
+          ItemsRolesRegistryFacet.roleData(RoleAssignment.nonce, generateRoleId('NOT_UNIQUE_ROLE'), RoleAssignment.grantee),
+        ).to.be.revertedWith('ItemsRolesRegistryFacet: role not supported')
+      })
+      it('should revert if grantee is invalid', async () => {
+        await expect(
+          ItemsRolesRegistryFacet.roleData(RoleAssignment.nonce, RoleAssignment.role, AddressZero),
+        ).to.be.revertedWith('ItemsRolesRegistryFacet: grantee mismatch')
+      })
+    })
 
-  describe("ERC-165 supportsInterface", async () => {
-    it("should return true if ERC1155Receiver interface id", async () => {
-      expect(await ItemsRolesRegistryFacet.supportsInterface("0x4e2312e0")).to.be.true;
-    });
-  });
+    describe('RoleExpirationDate', async () => {
+      it('should return the expiration date', async () => {
+        expect(
+          await ItemsRolesRegistryFacet.roleExpirationDate(RoleAssignment.nonce, RoleAssignment.role, RoleAssignment.grantee),
+        ).to.be.equal(RoleAssignment.expirationDate)
+      })
+      it('should revert if role is not Player()', async () => {
+        await expect(
+          ItemsRolesRegistryFacet.roleExpirationDate(
+            RoleAssignment.nonce,
+            generateRoleId('NOT_UNIQUE_ROLE'),
+            RoleAssignment.grantee,
+          ),
+        ).to.be.revertedWith('ItemsRolesRegistryFacet: role not supported')
+      })
+      it('should revert if grantee is invalid', async () => {
+        await expect(
+          ItemsRolesRegistryFacet.roleExpirationDate(RoleAssignment.nonce, RoleAssignment.role, AddressZero),
+        ).to.be.revertedWith('ItemsRolesRegistryFacet: grantee mismatch')
+      })
+    })
+  })
+
+  describe('ERC-165 supportsInterface', async () => {
+    it('should return true if ERC1155Receiver interface id', async () => {
+      expect(await ItemsRolesRegistryFacet.supportsInterface('0x4e2312e0')).to.be.true
+    })
+
+    it('should return true if IERCXXXX interface id', async () => {
+      expect(await ItemsRolesRegistryFacet.supportsInterface('0x1ec9fef7')).to.be.true
+    })
+  })
 });
