@@ -9,7 +9,7 @@ import {LibItems} from "../libraries/LibItems.sol";
 import {LibMeta} from "../../shared/libraries/LibMeta.sol";
 import {LibERC1155Marketplace} from "../libraries/LibERC1155Marketplace.sol";
 
-import {Modifiers, ItemType, EQUIPPED_WEARABLE_SLOTS} from "../libraries/LibAppStorage.sol";
+import {Modifiers, ItemType, EQUIPPED_WEARABLE_SLOTS, EquipedDelegatedItemInfo} from "../libraries/LibAppStorage.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {ERC1155Holder, ERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import {IEventHandlerFacet} from "../WearableDiamond/interfaces/IEventHandlerFacet.sol";
@@ -18,10 +18,11 @@ import {LibERC1155} from "../../shared/libraries/LibERC1155.sol";
 contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder {
     bytes32 public constant UNIQUE_ROLE = keccak256("Player()");
 
+    uint256 public constant MAX_EXPIRATION_DATE = 90 days;
+
     /** Modifiers **/
 
     modifier onlyWearables(address _tokenAddress, uint256 _tokenId) {
-        require(s.wearableDiamond != address(0), "ItemsRolesRegistryFacet: WearableDiamond address must be set");
         require(_tokenAddress == s.wearableDiamond, "ItemsRolesRegistryFacet: Only Item NFTs are supported");
         require(
             s.itemTypes[_tokenId].category == LibItems.ITEM_CATEGORY_WEARABLE,
@@ -38,7 +39,10 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
         bytes32 _role
     ) {
         require(_depositId > 0, "ItemsRolesRegistryFacet: depositId must be greater than zero");
-        require(_expirationDate > block.timestamp, "ItemsRolesRegistryFacet: expiration date must be in the future");
+        require(
+            _expirationDate > block.timestamp && _expirationDate <= block.timestamp + MAX_EXPIRATION_DATE,
+            "ItemsRolesRegistryFacet: invalid expiration date"
+        );
         require(_tokenAmount > 0, "ItemsRolesRegistryFacet: tokenAmount must be greater than zero");
         require(_role == UNIQUE_ROLE, "ItemsRolesRegistryFacet: role not supported");
         require(_grantee != address(0), "ItemsRolesRegistryFacet: grantee must not be zero address");
@@ -132,9 +136,11 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
         }
 
         uint256 _gotchiId = s.depositIdToItemIdToGotchiId[_depositId][_depositInfo.tokenId];
+        EquipedDelegatedItemInfo memory _equipedDelegatedItemInfo = s.gotchiIdToItemIdToDepositId[_gotchiId][_depositInfo.tokenId];
+        uint256 _balanceToUnequip = _equipedDelegatedItemInfo.balance;
 
-        if (_gotchiId != 0) {
-            _unequipWearable(_gotchiId, _depositInfo.tokenId);
+        if (_balanceToUnequip > 0) {
+            _unequipWearable(_gotchiId, _depositInfo.tokenId, _balanceToUnequip);
 
             delete s.depositIdToItemIdToGotchiId[_depositId][_depositInfo.tokenId];
             delete s.gotchiIdToItemIdToDepositId[_gotchiId][_depositInfo.tokenId];
@@ -153,10 +159,13 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
         );
     }
 
-    function _unequipWearable(uint256 _gotchiId, uint256 _wearableToUnequip) internal {
+    function _unequipWearable(uint256 _gotchiId, uint256 _wearableToUnequip, uint256 _balanceToUnequip) internal {
+        uint256 _unequipedBalance;
         for (uint256 slot; slot < EQUIPPED_WEARABLE_SLOTS; slot++) {
+            if (_unequipedBalance == _balanceToUnequip) break;
             if (s.aavegotchis[_gotchiId].equippedWearables[slot] != _wearableToUnequip) continue;
             s.aavegotchis[_gotchiId].equippedWearables[slot] = 0;
+            _unequipedBalance++;
         }
 
         LibItems.removeFromParent(address(this), _gotchiId, _wearableToUnequip, 1);
@@ -166,9 +175,7 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
     function withdraw(uint256 _depositId) public onlyOwnerOrApproved(s.itemsDeposits[_depositId].grantor, s.itemsDeposits[_depositId].tokenAddress) {
         DepositInfo memory _depositInfo = s.itemsDeposits[_depositId];
         require(
-            s.itemsRoleAssignments[_depositId].grantee == address(0) ||
-                s.itemsRoleAssignments[_depositId].expirationDate < block.timestamp ||
-                s.itemsRoleAssignments[_depositId].revocable,
+            s.itemsRoleAssignments[_depositId].expirationDate < block.timestamp || s.itemsRoleAssignments[_depositId].revocable,
             "ItemsRolesRegistryFacet: token has an active role"
         );
 

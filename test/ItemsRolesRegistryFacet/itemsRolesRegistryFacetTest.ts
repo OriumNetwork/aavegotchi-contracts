@@ -98,7 +98,18 @@ describe("ItemsRolesRegistryFacet", async () => {
         expirationDate: (await time.latest()) - ONE_DAY,
       })
       await expect(ItemsRolesRegistryFacet.grantRoleFrom(roleAssignment)).to.be.revertedWith(
-        'ItemsRolesRegistryFacet: expiration date must be in the future',
+        'ItemsRolesRegistryFacet: invalid expiration date',
+      )
+    })
+
+    it('should revert if expirationDate is more than 90 days in the future', async () => {
+      const roleAssignment = await buildRoleAssignment({
+        expirationDate: (await time.latest()) + (ONE_DAY * 91),
+        grantor: grantor.address,
+        grantee: grantee.address,
+      })
+      await expect(ItemsRolesRegistryFacet.grantRoleFrom(roleAssignment)).to.be.revertedWith(
+        'ItemsRolesRegistryFacet: invalid expiration date',
       )
     })
 
