@@ -168,8 +168,8 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
             _unequipedBalance++;
         }
 
-        LibItems.removeFromParent(address(this), _gotchiId, _wearableToUnequip, 1);
-        emit LibERC1155.TransferFromParent(address(this), _gotchiId, _wearableToUnequip, 1);
+        LibItems.removeFromParent(address(this), _gotchiId, _wearableToUnequip, _unequipedBalance);
+        emit LibERC1155.TransferFromParent(address(this), _gotchiId, _wearableToUnequip, _unequipedBalance);
     }
 
     function withdraw(uint256 _depositId) public onlyOwnerOrApproved(s.itemsDeposits[_depositId].grantor, s.itemsDeposits[_depositId].tokenAddress) {
