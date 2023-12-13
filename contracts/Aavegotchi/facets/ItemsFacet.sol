@@ -306,12 +306,11 @@ contract ItemsFacet is Modifiers {
 
             require(s.itemsRoleAssignments[_depositId].grantee == LibMeta.msgSender(), "ItemsFacet: Wearable not delegated to sender or depositId not valid");
             require(s.itemsDeposits[_depositId].tokenId == _toEquipWearableId, "ItemsFacet: Delegated Wearable not of this delegation");
-            require(s.itemsDepositsUnequippedBalance[_depositId] >= _balToTransfer, "ItemsFacet: Not enough delegated balance");
+            require(remainingBalance(_depositId) >= _balToTransfer, "ItemsFacet: Not enough delegated balance");
             require(s.itemsRoleAssignments[_depositId].expirationDate > block.timestamp, "ItemsFacet: Wearable delegation expired");
 
             s.gotchiIdToEquippedItemIdToDelegationInfo[_gotchiId][_toEquipWearableId].depositId = _depositId;
             s.gotchiIdToEquippedItemIdToDelegationInfo[_gotchiId][_toEquipWearableId].balance += _balToTransfer;
-            s.itemsDepositsUnequippedBalance[_depositId] -= _balToTransfer;
             s.depositIdToEquippedGotchis[_depositId].add(_gotchiId);
         } else {
             address _sender = LibMeta.msgSender();
@@ -345,8 +344,6 @@ contract ItemsFacet is Modifiers {
             } else {
                 s.gotchiIdToEquippedItemIdToDelegationInfo[_gotchiId][_existingEquippedWearableId].balance -= 1;
             }
-            
-            s.itemsDepositsUnequippedBalance[_depositId] += 1;
         } else {
             address _sender = LibMeta.msgSender();
 
@@ -354,6 +351,16 @@ contract ItemsFacet is Modifiers {
             LibItems.addToOwner(_sender, _existingEquippedWearableId, 1);
             IEventHandlerFacet(s.wearableDiamond).emitTransferSingleEvent(_sender, address(this), _sender, _existingEquippedWearableId, 1);
         }
+    }
+
+    function remainingBalance(uint256 _depositId) public view returns (uint256 _remainingBalance) {
+        uint256 _equippedGotchisLength = s.depositIdToEquippedGotchis[_depositId].length();
+        for(uint256 i; i < _equippedGotchisLength; i++) {
+            uint256 _gotchiId = s.depositIdToEquippedGotchis[_depositId].at(i);
+            _remainingBalance += s.gotchiIdToEquippedItemIdToDelegationInfo[_gotchiId][_depositId].balance;
+        }
+
+        _remainingBalance = s.itemsDeposits[_depositId].tokenAmount - _remainingBalance;
     }
 
     ///@notice Allow the owner of an NFT to use multiple consumable items for his aavegotchi

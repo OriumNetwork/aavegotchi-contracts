@@ -117,7 +117,6 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
 
         _unequipAllDelegatedWearables(_depositId, _depositInfo.tokenId);
         
-        s.itemsDepositsUnequippedBalance[_depositId] = s.itemsDeposits[_depositId].tokenAmount;
         delete s.itemsRoleAssignments[_depositId];
 
         emit RoleRevoked(
@@ -141,7 +140,6 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
         _unequipAllDelegatedWearables(_depositId, _depositInfo.tokenId); // If the item is equipped in some gotchi, it will be unequipped
         
         delete s.itemsDeposits[_depositId];
-        delete s.itemsDepositsUnequippedBalance[_depositId];
         delete s.itemsRoleAssignments[_depositId];
 
         _transferFrom(address(this), _depositInfo.grantor, _depositInfo.tokenAddress, _depositInfo.tokenId, _depositInfo.tokenAmount);
@@ -255,7 +253,6 @@ contract ItemsRolesRegistryFacet is Modifiers, ISftRolesRegistry, ERC1155Holder 
             _grantRoleData.tokenId,
             _grantRoleData.tokenAmount
         );
-        s.itemsDepositsUnequippedBalance[_grantRoleData.nonce] = _grantRoleData.tokenAmount;
 
         _transferFrom(_grantRoleData.grantor, address(this), _grantRoleData.tokenAddress, _grantRoleData.tokenId, _grantRoleData.tokenAmount);
     }
