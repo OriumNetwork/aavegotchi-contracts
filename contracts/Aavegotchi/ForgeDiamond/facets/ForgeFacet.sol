@@ -15,8 +15,8 @@ import {ItemsFacet} from "../../facets/ItemsFacet.sol";
 import {ItemType} from "../../libraries/LibAppStorage.sol";
 import {AavegotchiFacet} from "../../facets/AavegotchiFacet.sol";
 import {AavegotchiGameFacet} from "../../facets/AavegotchiGameFacet.sol";
-import {LendingGetterAndSetterFacet} from "../../facets/LendingGetterAndSetterFacet.sol";
 import {IERC1155Marketplace} from "../../../shared/interfaces/IERC1155Marketplace.sol";
+import {LibGotchiRoles} from "../../libraries/LibGotchiRoles.sol";
 
 contract ForgeFacet is Modifiers {
     event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value);
@@ -36,7 +36,7 @@ contract ForgeFacet is Modifiers {
     }
     // @notice Will revert if aavegotchi is in active rental as well.
     modifier onlyAavegotchiOwner(uint256 gotchiId) {
-        require(!lendingGetterAndSetterFacet().isAavegotchiLent(uint32(gotchiId)), "ForgeFacet: Aavegotchi is lent out");
+        require(!LibGotchiRoles.isAavegotchiLent(uint32(gotchiId)), "ForgeFacet: Aavegotchi is lent out");
         require(LibMeta.msgSender() == aavegotchiFacet().ownerOf(gotchiId), "ForgeFacet: Not Aavegotchi owner");
         _;
     }
@@ -60,10 +60,6 @@ contract ForgeFacet is Modifiers {
 
     function wearablesFacet() internal pure returns (WearablesFacet facet) {
         facet = WearablesFacet(ForgeLibDiamond.WEARABLE_DIAMOND);
-    }
-
-    function lendingGetterAndSetterFacet() internal pure returns (LendingGetterAndSetterFacet facet) {
-        facet = LendingGetterAndSetterFacet(ForgeLibDiamond.AAVEGOTCHI_DIAMOND);
     }
 
     function gltrContract() internal view returns (IERC20 token) {

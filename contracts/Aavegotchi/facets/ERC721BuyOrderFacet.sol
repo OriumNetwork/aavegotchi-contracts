@@ -8,9 +8,9 @@ import {LibERC20} from "../../shared/libraries/LibERC20.sol";
 import {IERC20} from "../../shared/interfaces/IERC20.sol";
 import {IERC721} from "../../shared/interfaces/IERC721.sol";
 import {LibMeta} from "../../shared/libraries/LibMeta.sol";
-import {LibGotchiLending} from "../libraries/LibGotchiLending.sol";
 import {Modifiers, ERC721BuyOrder} from "../libraries/LibAppStorage.sol";
 import {BaazaarSplit, LibSharedMarketplace, SplitAddresses} from "../libraries/LibSharedMarketplace.sol";
+import {LibGotchiRoles} from "../libraries/LibGotchiRoles.sol";
 
 contract ERC721BuyOrderFacet is Modifiers {
     event ERC721BuyOrderAdded(
@@ -201,14 +201,6 @@ contract ERC721BuyOrderFacet is Modifiers {
         require(erc721BuyOrder.cancelled == false && erc721BuyOrder.timePurchased == 0, "ERC721BuyOrder: Already processed");
         if (erc721BuyOrder.duration > 0) {
             require(erc721BuyOrder.timeCreated + erc721BuyOrder.duration >= block.timestamp, "ERC721BuyOrder: Already expired");
-        }
-
-        if (erc721BuyOrder.erc721TokenAddress == address(this)) {
-            // disable for gotchi in lending
-            uint256 category = LibSharedMarketplace.getERC721Category(_erc721TokenAddress, _erc721TokenId);
-            if (category == LibAavegotchi.STATUS_AAVEGOTCHI) {
-                require(!LibGotchiLending.isAavegotchiLent(uint32(_erc721TokenId)), "ERC721BuyOrder: Not supported for aavegotchi in lending");
-            }
         }
 
         // hash validation

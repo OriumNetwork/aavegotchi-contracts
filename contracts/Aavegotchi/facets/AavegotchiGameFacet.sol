@@ -13,7 +13,7 @@ import {CollateralEscrow} from "../CollateralEscrow.sol";
 import {LibMeta} from "../../shared/libraries/LibMeta.sol";
 import {LibERC721Marketplace} from "../libraries/LibERC721Marketplace.sol";
 
-import {LibGotchiLending} from "../libraries/LibGotchiLending.sol";
+import {LibGotchiRoles} from "../libraries/LibGotchiRoles.sol";
 
 import {LibBitmapHelpers} from "../libraries/LibBitmapHelpers.sol";
 
@@ -280,18 +280,12 @@ contract AavegotchiGameFacet is Modifiers {
             //If the owner is the bridge or GBM Contract, anyone can pet the gotchis inside
             if (owner != address(this) && owner != 0xD5543237C656f25EEA69f1E247b8Fa59ba353306) {
                 // Check lending status of aavegotchi and allow original pet operators
-                bool isOriginalPetOperator;
-                uint32 listingId = s.aavegotchiToListingId[uint32(tokenId)];
-                if ((listingId != 0) && (s.gotchiLendings[listingId].timeAgreed > 0)) {
-                    address lender = s.gotchiLendings[listingId].lender;
-                    isOriginalPetOperator = s.operators[lender][sender] || s.petOperators[lender][sender];
-                }
                 require(
                     sender == owner ||
                         s.operators[owner][sender] ||
                         s.approved[tokenId] == sender ||
                         s.petOperators[owner][sender] ||
-                        isOriginalPetOperator,
+                        LibGotchiRoles.hasGotchiversePlayerRole(uint32(tokenId), sender),
                     "AavegotchiGameFacet: Not owner of token or approved"
                 );
             }
@@ -336,17 +330,11 @@ contract AavegotchiGameFacet is Modifiers {
         require(msg.sender == s.realmAddress, "GotchiLending: Only Realm can reduce kinship via channeling");
         //no need to do checks on _gotchiId since realmDiamond handles that
         //first check if aavegotchi is lent
-        if (LibGotchiLending.isAavegotchiLent(_gotchiId)) {
-            //short-circuit here
-            uint32 listingId = s.aavegotchiToListingId[_gotchiId];
-            if (LibBitmapHelpers.getValueInByte(0, s.gotchiLendings[listingId].permissions) == 0) {
-                revert("This listing has no permissions set");
-            }
+        if (LibGotchiRoles.isAavegotchiLent(_gotchiId)) {
 
-            //check if channelling is allowed for the listing
-            //check that the modifier is at least 1
+            //check if channelling is allowed for the borrower
             //more checks can be introduced if more modifiers are added
-            if (LibBitmapHelpers.getValueInByte(0, s.gotchiLendings[listingId].permissions) > 0) {
+            if (LibGotchiRoles.rentalHasChannelingPermission(_gotchiId)) {
                 //more checks can be introduced here as different permissions are added
                 LibAavegotchi._reduceAavegotchiKinship(_gotchiId, 2);
             } else {

@@ -5,7 +5,6 @@ import {LibAavegotchi, AavegotchiInfo} from "../libraries/LibAavegotchi.sol";
 
 import {LibStrings} from "../../shared/libraries/LibStrings.sol";
 import {AppStorage, Modifiers} from "../libraries/LibAppStorage.sol";
-import {LibGotchiLending} from "../libraries/LibGotchiLending.sol";
 // import "hardhat/console.sol";
 import {LibMeta} from "../../shared/libraries/LibMeta.sol";
 import {LibERC721Marketplace} from "../libraries/LibERC721Marketplace.sol";
@@ -13,6 +12,7 @@ import {LibERC721} from "../../shared/libraries/LibERC721.sol";
 import {IERC721TokenReceiver} from "../../shared/interfaces/IERC721TokenReceiver.sol";
 
 import {ForgeFacet} from "../ForgeDiamond/facets/ForgeFacet.sol";
+import {LibGotchiRoles} from "../libraries/LibGotchiRoles.sol";
 
 contract AavegotchiFacet is Modifiers {
     event PetOperatorApprovalForAll(address indexed _owner, address indexed _operator, bool _approved);
@@ -204,7 +204,6 @@ contract AavegotchiFacet is Modifiers {
 
     // This function is used by transfer functions
     function internalTransferFrom(address _sender, address _from, address _to, uint256 _tokenId) internal {
-        LibGotchiLending.enforceAavegotchiNotInLending(uint32(_tokenId), _sender);
         _enforceAavegotchiNotForging(_tokenId);
 
         require(_to != address(0), "AavegotchiFacet: Can't transfer to 0 address");
