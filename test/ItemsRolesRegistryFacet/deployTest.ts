@@ -94,9 +94,7 @@ export async function upgradeItemsFacet() {
     {
       facetName: "contracts/Aavegotchi/facets/ItemsFacet.sol:ItemsFacet",
       addSelectors: [
-       // "function equipWearables(uint256 _tokenId,uint16[16] calldata _wearablesToEquip) external",
         "function equipDelegatedWearables(uint256 _tokenId,uint16[16] calldata _wearablesToEquip,uint256[16] calldata _commitmentIds) external",
-      //  "function useConsumables(uint256 _tokenId,uint256[] calldata _itemIds,uint256[] calldata _quantities) external",
       ],
       removeSelectors: [],
     },
