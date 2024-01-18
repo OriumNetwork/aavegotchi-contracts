@@ -249,15 +249,11 @@ contract ItemsFacet is Modifiers {
                 continue;
             }
 
-            //Equips new wearable (or sets to 0)
-            aavegotchi.equippedWearables[slot] = uint16(toEquipId);
-
             //If a wearable was equipped in this slot and can be transferred, transfer back to owner.
             
             if (existingEquippedWearableId != 0 && s.itemTypes[existingEquippedWearableId].canBeTransferred) {
-                if (_sameWearablesIds && (slot == LibItems.WEARABLE_SLOT_HAND_LEFT || slot == LibItems.WEARABLE_SLOT_HAND_RIGHT)) {
-                   delete aavegotchi.equippedWearables[slot];
-                }
+                // Unequip wearable (Sets to 0)
+                delete aavegotchi.equippedWearables[slot];
                 // remove wearable from Aavegotchi and transfer item to owner
                 _removeWearableFromGotchi(_tokenId, existingEquippedWearableId, slot, _gotchiInfo);
             }
@@ -283,6 +279,9 @@ contract ItemsFacet is Modifiers {
                         require(canBeEquipped, "ItemsFacet: Wearable can't be used for this collateral");
                     }
                 }
+                
+                //Equips new wearable
+                aavegotchi.equippedWearables[slot] = uint16(toEquipId);
 
                 //Transfer to Aavegotchi
                 _addWearableToGotchi(_commitmentIdToEquip, _tokenId, toEquipId, slot, _gotchiInfo);
