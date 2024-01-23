@@ -293,7 +293,13 @@ contract ItemsRolesRegistryFacet is Modifiers, IERC7589, ERC1155Holder {
         bool _revocable,
         bytes calldata _data
     ) internal {
-        s.itemRolesCommitmentInfo[_commitmentId].roleAssignment = RoleAssignment(_grantee, _expirationDate, _revocable, _data);
+        ItemRolesInfo storage _commitmentInfo = s.itemRolesCommitmentInfo[_commitmentId];
+        require(_grantee != address(0), "ItemsRolesRegistryFacet: grantee cannot be zero address");
+        require(
+            _commitmentInfo.roleAssignment.expirationDate < block.timestamp || _commitmentInfo.roleAssignment.revocable,
+            "ItemsRolesRegistryFacet: token has an active role"
+        );
+        _commitmentInfo.roleAssignment = RoleAssignment(_grantee, _expirationDate, _revocable, _data);
         emit RoleGranted(_commitmentId, _role, _grantee, _expirationDate, _revocable, _data);
     }
 

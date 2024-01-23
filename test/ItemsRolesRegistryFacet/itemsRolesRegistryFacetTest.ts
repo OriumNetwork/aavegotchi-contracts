@@ -302,6 +302,50 @@ describe("ItemsRolesRegistryFacet", async () => {
           GrantRoleData.data,
         )
     })
+
+    it('should revert when role is not revocable and is not expired', async () => {
+      const newCommitmentId = 2
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).commitTokens(
+          TokensCommitted.grantor,
+          TokensCommitted.tokenAddress,
+          TokensCommitted.tokenId,
+          TokensCommitted.tokenAmount,
+        ),
+      ).to.not.be.reverted
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).grantRole(
+          newCommitmentId,
+          GrantRoleData.role,
+          GrantRoleData.grantee,
+          GrantRoleData.expirationDate,
+          false,
+          GrantRoleData.data,
+        ),
+      ).to.not.be.reverted
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).grantRole(
+          newCommitmentId,
+          GrantRoleData.role,
+          GrantRoleData.grantee,
+          GrantRoleData.expirationDate,
+          false,
+          GrantRoleData.data,
+        ),
+      ).to.be.revertedWith('ItemsRolesRegistryFacet: token has an active role')
+    })
+
+    it('should revert if grantee is zero address', async () => {
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).grantRole(
+          GrantRoleData.commitmentId,
+          GrantRoleData.role,
+          ethers.constants.AddressZero,
+          GrantRoleData.expirationDate,
+          GrantRoleData.revocable,
+          GrantRoleData.data,
+        )).to.be.revertedWith('ItemsRolesRegistryFacet: grantee cannot be zero address')
+    })
   })
 
   describe('revokeRole', async () => {
