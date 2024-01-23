@@ -17,6 +17,7 @@ import {
   generateRoleId,
   buildCommitment,
   buildGrantRole,
+  ONE_DAY,
 } from "./helpers";
 import { itemManagerAlt } from "../../scripts/helperFunctions";
 import { GrantRoleData, Commitment } from "./types";
@@ -303,8 +304,7 @@ describe("ItemsRolesRegistryFacet", async () => {
         )
     })
 
-    it('should revert when role is not revocable and is not expired', async () => {
-      const newCommitmentId = 2
+    it('should revert when role is not revocable', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).commitTokens(
           TokensCommitted.grantor,
@@ -315,7 +315,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       ).to.not.be.reverted
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          newCommitmentId,
+          ++commitmentIdsCounter,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -325,10 +325,42 @@ describe("ItemsRolesRegistryFacet", async () => {
       ).to.not.be.reverted
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          newCommitmentId,
+          commitmentIdsCounter,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
+          false,
+          GrantRoleData.data,
+        ),
+      ).to.be.revertedWith('ItemsRolesRegistryFacet: token has an active role')
+    })
+    
+    it('should revert when role is expired', async () => {
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).commitTokens(
+          TokensCommitted.grantor,
+          TokensCommitted.tokenAddress,
+          TokensCommitted.tokenId,
+          TokensCommitted.tokenAmount,
+        ),
+      ).to.not.be.reverted
+      commitmentIdsCounter++
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).grantRole(
+          commitmentIdsCounter,
+          GrantRoleData.role,
+          GrantRoleData.grantee,
+          GrantRoleData.expirationDate,
+          false,
+          GrantRoleData.data,
+        ),
+      ).to.not.be.reverted
+      await expect(
+        ItemsRolesRegistryFacet.connect(grantor).grantRole(
+          commitmentIdsCounter,
+          GrantRoleData.role,
+          GrantRoleData.grantee,
+          GrantRoleData.expirationDate! + ONE_DAY,
           false,
           GrantRoleData.data,
         ),
