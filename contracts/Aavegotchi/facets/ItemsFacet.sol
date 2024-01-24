@@ -242,8 +242,8 @@ contract ItemsFacet is Modifiers {
             uint256 _depositIdToEquip = _depositIdsToEquip[slot];
             uint256 _existingEquippedDepositId = _gotchiInfo.equippedDepositIds[slot];
 
-            //If the new wearable value is equal to the current equipped wearable in that slot and the depositId is the same
-            //do nothing
+            // Users might replace Wearables they own with delegated Werables.
+            // For this reason, we only skip this slot if both the Wearable tokenId & depositId match
             if (toEquipId == existingEquippedWearableId && _existingEquippedDepositId == _depositIdToEquip) {
                 continue;
             }
