@@ -11,6 +11,7 @@ import {
   LibERC1155,
   LibEventHandler,
   WearablesFacet,
+  ERC721MarketplaceFacet,
 } from "../../typechain";
 
 import { BigNumber, Contract, Signer } from "ethers";
@@ -46,6 +47,7 @@ describe("ItemsFacet", async () => {
   let daoFacet: DAOFacet;
   let aavegotchiFacet: AavegotchiFacet;
   let libERC1155: LibERC1155;
+  let ERC721MarketplaceFacet: ERC721MarketplaceFacet;
 
   const gotchiId = LargeGotchiOwnerAavegotchis[0];
   const emptyItemdepositIds = new Array(16).fill(BigNumber.from(0));
@@ -95,6 +97,11 @@ describe("ItemsFacet", async () => {
       "contracts/Aavegotchi/facets/AavegotchiFacet.sol:AavegotchiFacet",
       aavegotchiDiamondAddress
     )) as AavegotchiFacet;
+
+    ERC721MarketplaceFacet = (await ethers.getContractAt(
+      "ERC721MarketplaceFacet",
+      aavegotchiDiamondAddress
+    )) as ERC721MarketplaceFacet;
 
     await network.provider.request({
       method: "hardhat_impersonateAccount",
@@ -532,8 +539,8 @@ describe("ItemsFacet", async () => {
       it("should NOT transfer an aavegotchi with delegated wearable equipped", async () => {
         const anotherGotchiId = LargeGotchiOwnerAavegotchis[1];
 
-        (itemdepositIds[3] = GrantRoleData.depositId),
-          (wearableIdsToEquip[3] = wearableIds[3]);
+        itemdepositIds[3] = GrantRoleData.depositId
+        wearableIdsToEquip[3] = wearableIds[3]
 
         await expect(
           itemsFacet
@@ -583,6 +590,60 @@ describe("ItemsFacet", async () => {
           )
           .to.not.emit(libEventHandler, "TransferSingle");
       });
+      it('should NOT create a ERC721 listing for an aavegotchi with delegated wearable equipped', async () => {
+        const anotherGotchiId = LargeGotchiOwnerAavegotchis[1];
+
+        itemdepositIds[3] = GrantRoleData.depositId
+        wearableIdsToEquip[3] = wearableIds[3]
+
+        await expect(
+          itemsFacet
+            .connect(grantee)
+            .equipDelegatedWearables(
+              anotherGotchiId,
+              wearableIdsToEquip,
+              itemdepositIds
+            )
+        )
+          .to.emit(libERC1155, "TransferToParent")
+          .withArgs(
+            aavegotchiDiamondAddress,
+            anotherGotchiId,
+            wearableIds[3],
+            1
+          )
+          .to.not.emit(libEventHandler, "TransferSingle");
+
+        await expect(
+          ERC721MarketplaceFacet
+            .connect(grantee)
+            .addERC721Listing(
+              aavegotchiDiamondAddress,
+              anotherGotchiId,
+              "1",
+            )
+        ).to.be.revertedWith(
+          "ERC721Marketplace: Only callable on Aavegotchis with no delegated wearables equipped"
+        );
+
+        await expect(
+          itemsFacet
+            .connect(grantee)
+            .equipDelegatedWearables(
+              anotherGotchiId,
+              emptyWearableIds,
+              emptyItemdepositIds
+            )
+        )
+          .to.emit(libERC1155, "TransferFromParent")
+          .withArgs(
+            aavegotchiDiamondAddress,
+            anotherGotchiId,
+            wearableIds[3],
+            1
+          )
+          .to.not.emit(libEventHandler, "TransferSingle");
+      })
       it("should equip and unequp two gloves one delegated and one not", async () => {
         await wearablesFacet
           .connect(grantor)
