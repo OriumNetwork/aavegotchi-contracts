@@ -301,8 +301,8 @@ contract ItemsRolesRegistryFacet is Modifiers, IERC7589, ERC1155Holder {
         bool _revocable,
         bytes calldata _data
     ) internal {
-        ItemRolesInfo storage _depositInfo = s.itemRolesDepositInfo[_depositId];
         require(_grantee != address(0), "ItemsRolesRegistryFacet: grantee cannot be zero address");
+        ItemRolesInfo storage _depositInfo = s.itemRolesDepositInfo[_depositId];
         require(
             _depositInfo.roleAssignment.expirationDate < block.timestamp || _depositInfo.roleAssignment.revocable,
             "ItemsRolesRegistryFacet: token has an active role"
