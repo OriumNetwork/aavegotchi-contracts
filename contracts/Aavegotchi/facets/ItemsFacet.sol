@@ -311,7 +311,7 @@ contract ItemsFacet is Modifiers {
             
             _gotchiInfo.equippedDepositIds[_slot] = _depositId;
             // this counter is incremented whenever a delegated wearable is equipped
-            // this is used to prevent aavegotchi equipped with delegated wearables from being transferred or listed
+            // this is used to prevent Aavegotchis equipped with delegated Wearables from being transferred or listed
             _gotchiInfo.equippedDelegatedWearablesCount++;
             _depositInfo.balanceUsed++;
             _depositInfo.equippedGotchis.add(_gotchiId);
