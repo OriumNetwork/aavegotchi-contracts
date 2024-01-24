@@ -250,8 +250,8 @@ contract ItemsFacet is Modifiers {
 
             //If a wearable was equipped in this slot and can be transferred, transfer back to owner.
             if (existingEquippedWearableId != 0 && s.itemTypes[existingEquippedWearableId].canBeTransferred) {
-                // We deleted the wearable from the slot, so we are able to withdraw it back to the diamond or the user
-                // this line necessary to cover the edge case when the wearables to equip and unequip are the same, but the depositId is different
+                // To prevent the function `removeFromParent` to revert, it's necessary first to unequip this Wearable (delete from storage slot)
+                // This is an edge case introduced by delegated Wearables, since users can now equip and unequip Wearables of same tokenId (but different depositId)
                 delete aavegotchi.equippedWearables[slot];
 
                 // remove wearable from Aavegotchi and transfer item to owner
