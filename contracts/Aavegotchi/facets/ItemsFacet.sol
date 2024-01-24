@@ -363,7 +363,7 @@ contract ItemsFacet is Modifiers {
             
             _depositInfo.balanceUsed--;
             // this counter is decremented whenever a delegated wearable is unequipped
-            // this is used to allow Aavegotchis being transferred or listed again (when the counter reaches 0)
+            // this is used to allow Aavegotchis to be transferred or listed again (when the counter reaches 0)
             _gotchiInfo.equippedDelegatedWearablesCount--;
             delete _gotchiInfo.equippedDepositIds[_slot];
         } else {
