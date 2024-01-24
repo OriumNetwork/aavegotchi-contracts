@@ -81,7 +81,7 @@ contract ItemsRolesRegistryFacet is Modifiers, IERC7589, ERC1155Holder {
         bytes32 _role,
         address _grantee
     ) {
-        // The grantee must be the same as the one in the deposit in storage
+        // The grantee must match with the one on storage
         require(_grantee != address(0) && _grantee == s.itemRolesDepositInfo[_depositId].roleAssignment.grantee, "ItemsRolesRegistryFacet: grantee mismatch");
         _;
     }
