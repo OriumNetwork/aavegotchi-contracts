@@ -33,7 +33,7 @@ describe("ItemsRolesRegistryFacet", async () => {
   let wearablesFacet: WearablesFacet;
   let libEventHandler: LibEventHandler;
   let daoFacet: DAOFacet;
-  let commitmentIdsCounter = 0;
+  let depositIdsCounter = 0;
 
   before(async () => {
     const signers = await ethers.getSigners();
@@ -138,7 +138,7 @@ describe("ItemsRolesRegistryFacet", async () => {
 
     it('should create commitment when sender is grantor', async () => {
       const commitment = buildCommitment({grantor: grantor.address})
-      commitmentIdsCounter++
+      depositIdsCounter++
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).commitTokens(
           commitment.grantor,
@@ -148,7 +148,7 @@ describe("ItemsRolesRegistryFacet", async () => {
         ),
       )
         .to.emit(ItemsRolesRegistryFacet, 'TokensCommitted')
-        .withArgs(commitment.grantor, commitmentIdsCounter, commitment.tokenAddress, commitment.tokenId, commitment.tokenAmount)
+        .withArgs(commitment.grantor, depositIdsCounter, commitment.tokenAddress, commitment.tokenId, commitment.tokenAmount)
         .to.emit(libEventHandler, 'TransferSingle')
         .withArgs(
           grantor.address,
@@ -164,7 +164,7 @@ describe("ItemsRolesRegistryFacet", async () => {
         grantor: grantor.address,
         tokenAddress: wearableDiamondAddress,
       })
-      commitmentIdsCounter++
+      depositIdsCounter++
       await ItemsRolesRegistryFacet.connect(grantor).setRoleApprovalForAll(commitment.tokenAddress, anotherUser.address, true)
       await expect(
         ItemsRolesRegistryFacet.connect(anotherUser).commitTokens(
@@ -175,7 +175,7 @@ describe("ItemsRolesRegistryFacet", async () => {
         ),
       )
         .to.emit(ItemsRolesRegistryFacet, 'TokensCommitted')
-        .withArgs(commitment.grantor, commitmentIdsCounter, commitment.tokenAddress, commitment.tokenId, commitment.tokenAmount)
+        .withArgs(commitment.grantor, depositIdsCounter, commitment.tokenAddress, commitment.tokenId, commitment.tokenAmount)
         .to.emit(libEventHandler, 'TransferSingle')
         .withArgs(
           anotherUser.address,
@@ -196,9 +196,9 @@ describe("ItemsRolesRegistryFacet", async () => {
         grantor: grantor.address,
         tokenAddress: wearableDiamondAddress,
       })
-      commitmentIdsCounter++
+      depositIdsCounter++
       GrantRoleData = await buildGrantRole({
-        commitmentId: commitmentIdsCounter,
+        depositId: depositIdsCounter,
         grantee: grantee.address,
       })
       await expect(
@@ -219,7 +219,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       )
       await expect(
         ItemsRolesRegistryFacet.connect(anotherUser).grantRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -232,7 +232,7 @@ describe("ItemsRolesRegistryFacet", async () => {
     it('should revert when role is not supported', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           generateRoleId('ANOTHER_ROLE'),
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -245,7 +245,7 @@ describe("ItemsRolesRegistryFacet", async () => {
     it('should revert when expirationDate is zero', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           await time.latest(),
@@ -258,7 +258,7 @@ describe("ItemsRolesRegistryFacet", async () => {
     it('should grant role when sender is grantor', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -268,7 +268,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       )
         .to.emit(ItemsRolesRegistryFacet, 'RoleGranted')
         .withArgs(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -285,7 +285,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       )
       await expect(
         ItemsRolesRegistryFacet.connect(anotherUser).grantRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -295,7 +295,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       )
         .to.emit(ItemsRolesRegistryFacet, 'RoleGranted')
         .withArgs(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -315,7 +315,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       ).to.not.be.reverted
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          ++commitmentIdsCounter,
+          ++depositIdsCounter,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -325,7 +325,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       ).to.not.be.reverted
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          commitmentIdsCounter,
+          depositIdsCounter,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -344,10 +344,10 @@ describe("ItemsRolesRegistryFacet", async () => {
           TokensCommitted.tokenAmount,
         ),
       ).to.not.be.reverted
-      commitmentIdsCounter++
+      depositIdsCounter++
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          commitmentIdsCounter,
+          depositIdsCounter,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -357,7 +357,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       ).to.not.be.reverted
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          commitmentIdsCounter,
+          depositIdsCounter,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate! + ONE_DAY,
@@ -370,7 +370,7 @@ describe("ItemsRolesRegistryFacet", async () => {
     it('should revert if grantee is zero address', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           ethers.constants.AddressZero,
           GrantRoleData.expirationDate,
@@ -389,9 +389,9 @@ describe("ItemsRolesRegistryFacet", async () => {
         grantor: grantor.address,
         tokenAddress: wearableDiamondAddress,
       })
-      commitmentIdsCounter++
+      depositIdsCounter++
       GrantRoleData = await buildGrantRole({
-        commitmentId: commitmentIdsCounter,
+        depositId: depositIdsCounter,
         grantee: grantee.address,
       })
       await expect(
@@ -404,7 +404,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       ).to.not.be.reverted
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -422,7 +422,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       )
       await expect(
         ItemsRolesRegistryFacet.connect(anotherUser).revokeRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           grantee.address,
         ),
@@ -432,7 +432,7 @@ describe("ItemsRolesRegistryFacet", async () => {
     it('should revert when the grantee is not the same', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).revokeRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           anotherUser.address,
         ),
@@ -440,7 +440,7 @@ describe("ItemsRolesRegistryFacet", async () => {
     })
 
     it('should revert when role is not expired and is not revocable', async () => {
-      const newCommitmentId = 2
+      const newdepositId = 2
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).commitTokens(
           TokensCommitted.grantor,
@@ -451,7 +451,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       ).to.not.be.reverted
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          newCommitmentId,
+          newdepositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -460,14 +460,14 @@ describe("ItemsRolesRegistryFacet", async () => {
         ),
       ).to.not.be.reverted
       await expect(
-        ItemsRolesRegistryFacet.connect(grantor).revokeRole(newCommitmentId, GrantRoleData.role, GrantRoleData.grantee),
+        ItemsRolesRegistryFacet.connect(grantor).revokeRole(newdepositId, GrantRoleData.role, GrantRoleData.grantee),
       ).to.be.revertedWith('ItemsRolesRegistryFacet: role is not expired and is not revocable')
     })
 
     it('should revoke role when sender is grantee, and role is not expired nor revocable', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -478,37 +478,37 @@ describe("ItemsRolesRegistryFacet", async () => {
 
       await expect(
         ItemsRolesRegistryFacet.connect(grantee).revokeRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
         ),
       )
         .to.emit(ItemsRolesRegistryFacet, 'RoleRevoked')
-        .withArgs(GrantRoleData.commitmentId, GrantRoleData.role, GrantRoleData.grantee)
+        .withArgs(GrantRoleData.depositId, GrantRoleData.role, GrantRoleData.grantee)
     })
 
     it('should revoke role when sender is grantor', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).revokeRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
         ),
       )
         .to.emit(ItemsRolesRegistryFacet, 'RoleRevoked')
-        .withArgs(GrantRoleData.commitmentId, GrantRoleData.role, GrantRoleData.grantee)
+        .withArgs(GrantRoleData.depositId, GrantRoleData.role, GrantRoleData.grantee)
     })
 
     it('should revoke role when sender is grantee', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantee).revokeRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
         ),
       )
         .to.emit(ItemsRolesRegistryFacet, 'RoleRevoked')
-        .withArgs(GrantRoleData.commitmentId, GrantRoleData.role, GrantRoleData.grantee)
+        .withArgs(GrantRoleData.depositId, GrantRoleData.role, GrantRoleData.grantee)
     })
 
     it('should revoke role when sender is approved by grantor', async () => {
@@ -519,13 +519,13 @@ describe("ItemsRolesRegistryFacet", async () => {
       )
       await expect(
         ItemsRolesRegistryFacet.connect(anotherUser).revokeRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
         ),
       )
         .to.emit(ItemsRolesRegistryFacet, 'RoleRevoked')
-        .withArgs(GrantRoleData.commitmentId, GrantRoleData.role, GrantRoleData.grantee)
+        .withArgs(GrantRoleData.depositId, GrantRoleData.role, GrantRoleData.grantee)
     })
 
     it('should revoke role when sender is approved by grantee', async () => {
@@ -536,13 +536,13 @@ describe("ItemsRolesRegistryFacet", async () => {
       )
       await expect(
         ItemsRolesRegistryFacet.connect(anotherUser).revokeRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
         ),
       )
         .to.emit(ItemsRolesRegistryFacet, 'RoleRevoked')
-        .withArgs(GrantRoleData.commitmentId, GrantRoleData.role, GrantRoleData.grantee)
+        .withArgs(GrantRoleData.depositId, GrantRoleData.role, GrantRoleData.grantee)
     })
   })
 
@@ -555,9 +555,9 @@ describe("ItemsRolesRegistryFacet", async () => {
         grantor: grantor.address,
         tokenAddress: wearableDiamondAddress,
       })
-      commitmentIdsCounter++
+      depositIdsCounter++
       GrantRoleData = await buildGrantRole({
-        commitmentId: commitmentIdsCounter,
+        depositId: depositIdsCounter,
         grantee: grantee.address,
         revocable: false,
       })
@@ -577,7 +577,7 @@ describe("ItemsRolesRegistryFacet", async () => {
         anotherUser.address,
         false,
       )
-      await expect(ItemsRolesRegistryFacet.connect(anotherUser).releaseTokens(GrantRoleData.commitmentId)).to.be.revertedWith(
+      await expect(ItemsRolesRegistryFacet.connect(anotherUser).releaseTokens(GrantRoleData.depositId)).to.be.revertedWith(
         'ItemsRolesRegistryFacet: account not approved',
       )
     })
@@ -585,7 +585,7 @@ describe("ItemsRolesRegistryFacet", async () => {
     it('should revert when commitment has an active role', async () => {
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -593,15 +593,15 @@ describe("ItemsRolesRegistryFacet", async () => {
           GrantRoleData.data,
         ),
       ).to.not.be.reverted
-      await expect(ItemsRolesRegistryFacet.connect(grantor).releaseTokens(GrantRoleData.commitmentId)).to.be.revertedWith(
+      await expect(ItemsRolesRegistryFacet.connect(grantor).releaseTokens(GrantRoleData.depositId)).to.be.revertedWith(
         'ItemsRolesRegistryFacet: token has an active role',
       )
     })
 
     it('should withdraw tokens when sender is grantor', async () => {
-      await expect(ItemsRolesRegistryFacet.connect(grantor).releaseTokens(GrantRoleData.commitmentId))
+      await expect(ItemsRolesRegistryFacet.connect(grantor).releaseTokens(GrantRoleData.depositId))
         .to.emit(ItemsRolesRegistryFacet, 'TokensReleased')
-        .withArgs(GrantRoleData.commitmentId)
+        .withArgs(GrantRoleData.depositId)
         .to.emit(libEventHandler, 'TransferSingle')
         .withArgs(
           grantor.address,
@@ -618,9 +618,9 @@ describe("ItemsRolesRegistryFacet", async () => {
         anotherUser.address,
         true,
       )
-      await expect(ItemsRolesRegistryFacet.connect(anotherUser).releaseTokens(GrantRoleData.commitmentId))
+      await expect(ItemsRolesRegistryFacet.connect(anotherUser).releaseTokens(GrantRoleData.depositId))
         .to.emit(ItemsRolesRegistryFacet, 'TokensReleased')
-        .withArgs(GrantRoleData.commitmentId)
+        .withArgs(GrantRoleData.depositId)
         .to.emit(libEventHandler, 'TransferSingle')
         .withArgs(
           anotherUser.address,
@@ -638,9 +638,9 @@ describe("ItemsRolesRegistryFacet", async () => {
 
     beforeEach(async () => {
       TokensCommitted = buildCommitment({grantor: grantor.address})
-      commitmentIdsCounter++
+      depositIdsCounter++
       GrantRoleData = await buildGrantRole({
-        commitmentId: commitmentIdsCounter,
+        depositId: depositIdsCounter,
         grantee: grantee.address,
       })
       await expect(
@@ -653,7 +653,7 @@ describe("ItemsRolesRegistryFacet", async () => {
       ).to.not.be.reverted
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).grantRole(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
           GrantRoleData.expirationDate,
@@ -665,18 +665,18 @@ describe("ItemsRolesRegistryFacet", async () => {
 
     it('should revert when grantee is not the same', async () => {
       await expect(
-        ItemsRolesRegistryFacet.connect(grantor).roleData(GrantRoleData.commitmentId, GrantRoleData.role, anotherUser.address),
+        ItemsRolesRegistryFacet.connect(grantor).roleData(GrantRoleData.depositId, GrantRoleData.role, anotherUser.address),
       ).to.be.revertedWith('ItemsRolesRegistryFacet: grantee mismatch')
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).roleExpirationDate(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           anotherUser.address,
         ),
       ).to.be.revertedWith('ItemsRolesRegistryFacet: grantee mismatch')
       await expect(
         ItemsRolesRegistryFacet.connect(grantor).isRoleRevocable(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           anotherUser.address,
         ),
@@ -686,7 +686,7 @@ describe("ItemsRolesRegistryFacet", async () => {
     it('should return role data', async () => {
       expect(
         await ItemsRolesRegistryFacet.connect(grantor).roleExpirationDate(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
         ),
@@ -694,7 +694,7 @@ describe("ItemsRolesRegistryFacet", async () => {
 
       expect(
         await ItemsRolesRegistryFacet.connect(grantor).roleData(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
         ),
@@ -702,7 +702,7 @@ describe("ItemsRolesRegistryFacet", async () => {
 
       expect(
         await ItemsRolesRegistryFacet.connect(grantor).isRoleRevocable(
-          GrantRoleData.commitmentId,
+          GrantRoleData.depositId,
           GrantRoleData.role,
           GrantRoleData.grantee,
         ),
