@@ -52,6 +52,7 @@ library LibDelegatedWearables {
         // this counter is incremented whenever a delegated wearable is equipped
         // this is used to prevent Aavegotchis equipped with delegated Wearables from being transferred or listed
         _gotchiInfo.equippedDelegatedWearablesCount++;
+        // the balanceUsed counter is used to verify if all tokens delegated are in use, or if they can still be equipped
         _depositInfo.balanceUsed++;
         _depositInfo.equippedGotchis.add(_gotchiId);
 
