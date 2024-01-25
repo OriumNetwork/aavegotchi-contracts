@@ -54,6 +54,8 @@ library LibDelegatedWearables {
         _gotchiInfo.equippedDelegatedWearablesCount++;
         // the balanceUsed counter is used to verify if all tokens delegated are in use, or if they can still be equipped
         _depositInfo.balanceUsed++;
+        // equippedGotchis stores all Aavegotchis that are equipped if Wearables of a given depositId
+        // this is important because we need to make sure that all aavegotchis are unequipped when the owner is withdrawing their Wearables
         _depositInfo.equippedGotchis.add(_gotchiId);
 
         LibItems.addToParent(address(this), _gotchiId, _depositInfo.deposit.tokenId, 1);
