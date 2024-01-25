@@ -259,7 +259,7 @@ contract ItemsFacet is Modifiers {
 
                 // remove wearable from Aavegotchi and transfer item to owner
                 if (_gotchiInfo.equippedDepositIds[slot] != 0) {
-                    // remove wearable from Aavegotchi and delete delegation
+                    // remove wearable from Aavegotchi
                     LibDelegatedWearables.removeDelegatedWearableFromGotchi(slot, _tokenId, existingEquippedWearableId);
                 } else {
                     // Remove wearable from Aavegotchi and transfer item to owner
