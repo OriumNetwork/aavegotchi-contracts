@@ -274,8 +274,8 @@ contract ItemsFacet is Modifiers {
             if (toEquipId != 0) {
                 _checkIfWearableCanBeEquipped(toEquipId, _tokenId, slot);
                 
-                //Equips new wearable
-                // this is added to the aavegotchi, it will equip one by one, even if hands has the same id (delegation different)
+                // Equips new Wearable
+                // Wearable is equip one by one, even if hands has the same id (different depositId)
                 aavegotchi.equippedWearables[slot] = uint16(toEquipId);
                 _gotchiInfo.equippedDepositIds[slot] = _depositIdToEquip;
 
