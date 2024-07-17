@@ -375,6 +375,7 @@ struct AppStorage {
     // depositId => userRoleDepositInfo
     mapping(uint256 => ItemRolesInfo) itemRolesDepositInfo;
     // grantor => tokenAddress => operator => isApproved
+    // Is used for more than one NFT type.
     mapping(address => mapping(address => mapping(address => bool))) itemsRoleApprovals;
     // counter to generate depositIds for each new deposit created in Items Roles Registry
     uint256 itemsDepositIdCounter;

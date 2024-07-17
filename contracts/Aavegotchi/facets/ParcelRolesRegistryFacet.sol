@@ -11,6 +11,8 @@ import {Modifiers, RoleData} from "../libraries/LibAppStorage.sol";
 import {LibItems} from "../libraries/LibItems.sol";
 import {LibSharedMarketplace} from "../libraries/LibSharedMarketplace.sol";
 
+import {RoleApprovalFacet} from "./RoleApprovalFacet.sol";
+
 contract ParcelRolesRegistryFacet is Modifiers, IERC7432 {
     uint256 public constant MAX_EXPIRATION_DATE = 90 days;
 
@@ -131,9 +133,8 @@ contract ParcelRolesRegistryFacet is Modifiers, IERC7432 {
         emit TokenUnlocked(originalOwner, _tokenAddress, _tokenId);
     }
 
-    function setRoleApprovalForAll(address _tokenAddress, address _operator, bool _approved) external override {
-        s.itemsRoleApprovals[msg.sender][_tokenAddress][_operator] = _approved;
-        emit RoleApprovalForAll(_tokenAddress, _operator, _approved);
+    function setRoleApprovalForAll(address _tokenAddress, address _operator, bool _isApproved) external {
+        RoleApprovalFacet(address(this)).setRoleApprovalForAll(_tokenAddress, _operator, _isApproved);
     }
 
     /** View Functions **/

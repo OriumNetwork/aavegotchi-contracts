@@ -16,6 +16,7 @@ import {IEventHandlerFacet} from "../WearableDiamond/interfaces/IEventHandlerFac
 import {LibERC1155} from "../../shared/libraries/LibERC1155.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {LibItemsEvents} from "../libraries/LibItemsEvents.sol";
+import {RoleApprovalFacet} from "./RoleApprovalFacet.sol";
 
 contract ItemsRolesRegistryFacet is Modifiers, IERC7589, ERC1155Holder {
     using EnumerableSet for EnumerableSet.UintSet;
@@ -119,7 +120,7 @@ contract ItemsRolesRegistryFacet is Modifiers, IERC7589, ERC1155Holder {
         override
         validGrantRoleData(_expirationDate, _role)
         onlyOwnerOrApproved(s.itemRolesDepositInfo[_depositId].deposit.grantor, s.itemRolesDepositInfo[_depositId].deposit.tokenAddress)
-    {
+    { 
         _grantOrUpdateRole(_depositId, _role, _grantee, _expirationDate, _revocable, _data);
     }
 
@@ -182,9 +183,8 @@ contract ItemsRolesRegistryFacet is Modifiers, IERC7589, ERC1155Holder {
     /// @param _tokenAddress The token address.
     /// @param _operator The user approved to grant and revoke roles.
     /// @param _isApproved The approval status.
-    function setRoleApprovalForAll(address _tokenAddress, address _operator, bool _isApproved) external override {
-        s.itemsRoleApprovals[LibMeta.msgSender()][_tokenAddress][_operator] = _isApproved;
-        emit RoleApprovalForAll(_tokenAddress, _operator, _isApproved);
+    function setRoleApprovalForAll(address _tokenAddress, address _operator, bool _isApproved) external {
+        RoleApprovalFacet(address(this)).setRoleApprovalForAll(_tokenAddress, _operator, _isApproved);
     }
 
     /** View Functions **/

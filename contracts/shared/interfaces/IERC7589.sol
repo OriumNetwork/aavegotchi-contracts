@@ -104,12 +104,6 @@ interface IERC7589 {
     /// @param _commitmentId The commitment identifier.
     function releaseTokens(uint256 _commitmentId) external;
 
-    /// @notice Approves operator to grant and revoke roles on behalf of another user.
-    /// @param _tokenAddress The token address.
-    /// @param _operator The user approved to grant and revoke roles.
-    /// @param _approved The approval status.
-    function setRoleApprovalForAll(address _tokenAddress, address _operator, bool _approved) external;
-
     /** View Functions **/
 
     /// @notice Returns the owner of the commitment (grantor).
