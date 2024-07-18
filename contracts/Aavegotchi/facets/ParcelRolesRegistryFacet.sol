@@ -133,6 +133,10 @@ contract ParcelRolesRegistryFacet is Modifiers, IERC7432 {
         emit TokenUnlocked(originalOwner, _tokenAddress, _tokenId);
     }
 
+     /// @notice Approves operator to grant and revoke roles on behalf of another user.
+    /// @param _tokenAddress The token address.
+    /// @param _operator The user approved to grant and revoke roles.
+    /// @param _isApproved The approval status.
     function setRoleApprovalForAll(address _tokenAddress, address _operator, bool _isApproved) external {
         RoleApprovalFacet(address(this)).setRoleApprovalForAll(_tokenAddress, _operator, _isApproved);
     }
