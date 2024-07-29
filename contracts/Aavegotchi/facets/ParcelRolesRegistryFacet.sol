@@ -9,7 +9,6 @@ import {IRealmDiamond} from "contracts/shared/interfaces/IRealmDiamond.sol";
 import {Modifiers, RoleData} from "../libraries/LibAppStorage.sol";
 
 import {LibItems} from "../libraries/LibItems.sol";
-import {LibSharedMarketplace} from "../libraries/LibSharedMarketplace.sol";
 
 import {RoleApprovalFacet} from "./RoleApprovalFacet.sol";
 
@@ -35,7 +34,7 @@ contract ParcelRolesRegistryFacet is Modifiers, IERC7432 {
             s.allowedRoles.push(initialRoles[i]);
         }
     }
-
+    
     /** Modifiers **/
     
     /**
@@ -45,9 +44,7 @@ contract ParcelRolesRegistryFacet is Modifiers, IERC7432 {
      * @param _tokenId The token identifier.
      */
     modifier onlyRealm(address _tokenAddress, uint256 _tokenId) {
-        uint256 category = LibSharedMarketplace.getERC721Category(_tokenAddress, _tokenId);
         require(_tokenAddress == s.realmAddress, "ParcelRolesRegistryFacet: Only Item NFTs are supported");
-        require(category == 4, "ParcelRolesRegistryFacet: Only Items of type Realm are supported");
         _;
     }
 
@@ -137,7 +134,8 @@ contract ParcelRolesRegistryFacet is Modifiers, IERC7432 {
     /// @param _tokenAddress The token address.
     /// @param _operator The user approved to grant and revoke roles.
     /// @param _isApproved The approval status.
-    function setRoleApprovalForAll(address _tokenAddress, address _operator, bool _isApproved) external {
+
+    function setRoleApprovalForAllFacet(address _tokenAddress, address _operator, bool _isApproved) external {
         RoleApprovalFacet(address(this)).setRoleApprovalForAll(_tokenAddress, _operator, _isApproved);
     }
 
