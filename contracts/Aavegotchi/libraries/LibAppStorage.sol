@@ -5,6 +5,7 @@ import {LibMeta} from "../../shared/libraries/LibMeta.sol";
 import {ILink} from "../interfaces/ILink.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {IERC7589} from "../../shared/interfaces/IERC7589.sol";
+import {IERC7432} from "../../shared/interfaces/IERC7432.sol";
 
 uint256 constant EQUIPPED_WEARABLE_SLOTS = 16;
 uint256 constant NUMERIC_TRAITS_NUM = 6;
@@ -234,6 +235,20 @@ struct ItemRolesInfo {
     uint256 balanceUsed;
 }
 
+  // Parcel Roles 
+struct ParcelItemsRolesInfo {
+    IERC7432.Role role;
+}
+
+struct RoleData {
+    address recipient;
+    uint64 expirationDate;
+    bool revocable;
+    bytes data;
+}
+
+
+
 struct AppStorage {
     mapping(address => AavegotchiCollateralTypeInfo) collateralTypeInfo;
     mapping(address => uint256) collateralTypeIndexes;
@@ -360,12 +375,23 @@ struct AppStorage {
     // depositId => userRoleDepositInfo
     mapping(uint256 => ItemRolesInfo) itemRolesDepositInfo;
     // grantor => tokenAddress => operator => isApproved
+    // Is used for more than one NFT type.
     mapping(address => mapping(address => mapping(address => bool))) itemsRoleApprovals;
     // counter to generate depositIds for each new deposit created in Items Roles Registry
     uint256 itemsDepositIdCounter;
     // Auxiliary structs for Items Roles Registry
     // gotchiId => equippedDepositsInfo
     mapping(uint256 => GotchiEquippedDepositsInfo) gotchiEquippedDepositsInfo;
+    // Parcel Roles
+    // tokenAddress => tokenId  => role
+    mapping(address => mapping(uint256 => mapping(bytes32 => RoleData))) erc7432_roles;
+    //tokenAddress => tokenId => owner
+    mapping(address => mapping(uint256 => address)) erc7432OriginalOwners;
+    //tokenAddress => roleId => isAllowed
+    mapping(address => mapping(bytes32 => bool)) isRoleAllowed;
+    //roleId => isAllowed
+    mapping(bytes32 => bool) validRoles;
+    bytes32[] allowedRoles;
 }
 
 library LibAppStorage {
